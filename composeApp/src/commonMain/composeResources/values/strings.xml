@@ -1,0 +1,68 @@
+<resources>
+    <string name="app_name">Huerta App</string>
+
+    <string name="login_title">Huerta</string>
+    <string name="login_subtitle">Gestión Profesional de Cultivos</string>
+    <string name="login_user_hint">Usuario o Correo</string>
+    <string name="login_pass_hint">Contraseña</string>
+    <string name="login_btn">Iniciar Sesión</string>
+    <string name="login_forgot">¿Olvidaste tu contraseña?</string>
+    <string name="login_google">Continuar con Google</string>
+
+    <string name="home_greeting">Buenos días,</string>
+    <string name="home_role">Agricultor</string>
+    <string name="home_status_label">ESTADO GENERAL</string>
+    <string name="home_health_title">Salud del Huerto</string>
+    <string name="home_alerts_title">Alertas</string>
+    <string name="weather_humidity">Humedad</string>
+    <string name="weather_temp">Temp</string>
+    <string name="weather_uv">UV</string>
+    <string name="alert_irrigation_title">Riego Necesario</string>
+    <string name="alert_irrigation_desc">Sector Tomates - Humedad baja</string>
+    <string name="alert_review_title">Revisión Mensual</string>
+    <string name="alert_review_desc">Todo el huerto - Mañana</string>
+
+    <string name="garden_empty">Vacío</string>
+    <string name="garden_popup_title">¿Qué quieres plantar?</string>
+    <string name="garden_popup_cancel">Cancelar</string>
+    <string name="garden_menu_harvest">Cosechar</string>
+    <string name="garden_menu_remove">Arrancar</string>
+
+    <string name="products_title">Inventario</string>
+    <string name="products_add_btn">Añadir al inventario</string>
+    <string name="product_days_planted">días plantado</string>
+    <string name="product_stock_label">Stock:</string>
+    <string name="type_tool">Herramienta</string>
+    <string name="type_seed">Semilla</string>
+    <string name="type_chemical">Insumo</string>
+    <string name="type_plant">Planta</string>
+
+    <string name="profile_section_personal">DATOS PERSONALES</string>
+    <string name="profile_name_label">NOMBRE COMPLETO</string>
+    <string name="profile_email_label">CORREO ELECTRÓNICO</string>
+    <string name="profile_section_prefs">PREFERENCIAS</string>
+    <string name="pref_irrigation">Notificaciones de Riego</string>
+    <string name="pref_weather">Alertas de Clima</string>
+    <string name="pref_newsletter">Boletín Semanal</string>
+
+    <string name="tasks_for">Tareas para el</string>
+    <string name="of">de</string>
+    <string name="no_entries">No hay entradas para este día.</string>
+    <string name="diary_irrigation_title">Riego Hoy</string>
+    <string name="diary_irrigation_desc">Riego automático activado.</string>
+    <string name="diary_review_title">Revisión</string>
+    <string name="diary_review_desc">Revisión general de plagas.</string>
+
+    <string name="month_1">Enero</string>
+    <string name="month_2">Febrero</string>
+    <string name="month_3">Marzo</string>
+    <string name="month_4">Abril</string>
+    <string name="month_5">Mayo</string>
+    <string name="month_6">Junio</string>
+    <string name="month_7">Julio</string>
+    <string name="month_8">Agosto</string>
+    <string name="month_9">Septiembre</string>
+    <string name="month_10">Octubre</string>
+    <string name="month_11">Noviembre</string>
+    <string name="month_12">Diciembre</string>
+</resources>

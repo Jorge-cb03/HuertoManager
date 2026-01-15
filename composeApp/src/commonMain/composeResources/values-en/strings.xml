@@ -1,0 +1,68 @@
+<resources>
+    <string name="app_name">Huerta App</string>
+
+    <string name="login_title">Huerta</string>
+    <string name="login_subtitle">Professional Crop Management</string>
+    <string name="login_user_hint">User or Email</string>
+    <string name="login_pass_hint">Password</string>
+    <string name="login_btn">Sign In</string>
+    <string name="login_forgot">Forgot Password?</string>
+    <string name="login_google">Continue with Google</string>
+
+    <string name="home_greeting">Good morning,</string>
+    <string name="home_role">Farmer</string>
+    <string name="home_status_label">GENERAL STATUS</string>
+    <string name="home_health_title">Garden Health</string>
+    <string name="home_alerts_title">Alerts</string>
+    <string name="weather_humidity">Humidity</string>
+    <string name="weather_temp">Temp</string>
+    <string name="weather_uv">UV</string>
+    <string name="alert_irrigation_title">Irrigation Needed</string>
+    <string name="alert_irrigation_desc">Tomato Sector - Low humidity</string>
+    <string name="alert_review_title">Monthly Review</string>
+    <string name="alert_review_desc">Whole garden - Tomorrow</string>
+
+    <string name="garden_empty">Empty</string>
+    <string name="garden_popup_title">What to plant?</string>
+    <string name="garden_popup_cancel">Cancel</string>
+    <string name="garden_menu_harvest">Harvest</string>
+    <string name="garden_menu_remove">Remove</string>
+
+    <string name="products_title">Inventory</string>
+    <string name="products_add_btn">Add to inventory</string>
+    <string name="product_days_planted">days planted</string>
+    <string name="product_stock_label">Stock:</string>
+    <string name="type_tool">Tool</string>
+    <string name="type_seed">Seed</string>
+    <string name="type_chemical">Supply</string>
+    <string name="type_plant">Plant</string>
+
+    <string name="profile_section_personal">PERSONAL DETAILS</string>
+    <string name="profile_name_label">FULL NAME</string>
+    <string name="profile_email_label">EMAIL ADDRESS</string>
+    <string name="profile_section_prefs">PREFERENCES</string>
+    <string name="pref_irrigation">Irrigation Notifications</string>
+    <string name="pref_weather">Weather Alerts</string>
+    <string name="pref_newsletter">Weekly Newsletter</string>
+
+    <string name="tasks_for">Tasks for</string>
+    <string name="of">of</string>
+    <string name="no_entries">No entries for this day.</string>
+    <string name="diary_irrigation_title">Irrigation Today</string>
+    <string name="diary_irrigation_desc">Automatic irrigation active.</string>
+    <string name="diary_review_title">Review</string>
+    <string name="diary_review_desc">General pest review.</string>
+
+    <string name="month_1">January</string>
+    <string name="month_2">February</string>
+    <string name="month_3">March</string>
+    <string name="month_4">April</string>
+    <string name="month_5">May</string>
+    <string name="month_6">June</string>
+    <string name="month_7">July</string>
+    <string name="month_8">August</string>
+    <string name="month_9">September</string>
+    <string name="month_10">October</string>
+    <string name="month_11">November</string>
+    <string name="month_12">December</string>
+</resources>
