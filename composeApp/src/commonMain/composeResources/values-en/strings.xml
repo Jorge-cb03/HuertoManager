@@ -69,6 +69,11 @@
     <string name="pref_irrigation">Irrigation Notifications</string>
     <string name="pref_weather">Weather Alerts</string>
     <string name="pref_newsletter">Weekly Newsletter</string>
+    <string name="profile_edit_title">Edit Profile</string>
+    <string name="profile_edit_name_hint">New Name</string>
+    <string name="profile_edit_save">Save Changes</string>
+    <string name="profile_edit_cancel">Cancel</string>
+    <string name="profile_change_photo">Change Photo</string>
 
     <string name="tasks_for">Tasks for</string>
     <string name="of">of</string>
@@ -83,6 +88,16 @@
     <string name="add_diary_desc">Short Description</string>
     <string name="add_diary_btn">Save to Diary</string>
     <string name="diary_select_garden">Select Garden</string>
+    <string name="diary_date_label">Task Date</string>
+    <string name="diary_chip_irrigation">Watering</string>
+    <string name="diary_chip_pruning">Pruning</string>
+    <string name="diary_chip_harvest">Harvest</string>
+    <string name="diary_chip_fertilizer">Fertilizer</string>
+    <string name="diary_chip_other">Other</string>
+    <string name="diary_slider_label">Water Amount (Liters)</string>
+    <string name="diary_switch_urgent">Mark as Important</string>
+    <string name="diary_add_photo">Add Photo</string>
+    <string name="diary_photo_placeholder">No image selected</string>
 
     <string name="month_1">January</string>
     <string name="month_2">February</string>
@@ -96,4 +111,29 @@
     <string name="month_10">October</string>
     <string name="month_11">November</string>
     <string name="month_12">December</string>
+
+    <string name="about_title">About</string>
+    <string name="about_app_name">Huerta Manager</string>
+    <string name="about_version">Version 1.0.0</string>
+    <string name="about_description">App for comprehensive crop management, pest control, and task tracking in your urban garden.</string>
+    <string name="about_team_title">Development Team</string>
+    <string name="about_team_1">Jorge (Frontend &amp; UX)</string>
+    <string name="about_team_2">Ismael (Backend &amp; QA)</string>
+    <string name="about_copyright">© 2026 Huerta Manager Project</string>
+
+    <string name="dialog_confirm">Confirm</string>
+    <string name="dialog_cancel">Cancel</string>
+
+    <string name="dialog_harvest_title">Harvest plant?</string>
+    <string name="dialog_harvest_msg">The slot will be emptied. This action cannot be undone.</string>
+
+    <string name="dialog_delete_slot_title">Remove slot?</string>
+    <string name="dialog_delete_slot_msg">The slot will be hidden. You can restore it by tapping on the empty space.</string>
+
+    <string name="dialog_logout_title">Logout</string>
+    <string name="dialog_logout_msg">Are you sure you want to log out?</string>
+
+    <string name="menu_edit">Edit</string>
+    <string name="menu_delete">Delete</string>
+
 </resources>

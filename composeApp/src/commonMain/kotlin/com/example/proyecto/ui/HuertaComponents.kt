@@ -17,6 +17,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.proyecto.ui.theme.*
+import androidx.compose.ui.window.Dialog
 
 // Input Redondo (Login)
 @Composable
@@ -83,6 +84,29 @@ fun StatusPill(status: String) {
             Icon(Icons.Filled.Circle, null, tint = color, modifier = Modifier.size(8.dp))
             Spacer(Modifier.width(6.dp))
             Text(status, color = color, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+@Composable
+fun HuertaLoading(isLoading: Boolean) {
+    if (isLoading) {
+        // Usamos un Dialog para bloquear la pantalla mientras carga
+        Dialog(onDismissRequest = { /* No permitir cerrar */ }) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(100.dp)
+                    .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(16.dp))
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(
+                        color = GreenPrimary,
+                        modifier = Modifier.size(40.dp)
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Text("Cargando...", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface)
+                }
+            }
         }
     }
 }

@@ -3,85 +3,106 @@ package com.example.proyecto.ui.login
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.proyecto.ui.HuertaInput
+import com.example.proyecto.ui.HuertaLoading // <--- IMPORTANTE
 import com.example.proyecto.ui.theme.GreenPrimary
+import com.example.proyecto.ui.theme.GreenSecondary
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    var user by remember { mutableStateOf("") }
+    var pass by remember { mutableStateOf("") }
+    var passVisible by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        // Logo
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface),
-            contentAlignment = Alignment.Center
+    // Estado de carga y CoroutineScope
+    var isLoading by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(GreenSecondary, GreenPrimary)))) {
+        // TARJETA CENTRAL
+        Card(
+            modifier = Modifier.align(Alignment.Center).padding(20.dp).fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
-            Icon(Icons.Filled.Spa, null, tint = GreenPrimary, modifier = Modifier.size(40.dp))
+            Column(
+                modifier = Modifier.padding(30.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(Icons.Filled.Eco, null, tint = GreenPrimary, modifier = Modifier.size(60.dp))
+                Spacer(Modifier.height(10.dp))
+                Text(stringResource(Res.string.login_title), fontSize = 28.sp, fontWeight = FontWeight.Bold, color = GreenPrimary)
+                Text(stringResource(Res.string.login_subtitle), fontSize = 14.sp, color = Color.Gray)
+
+                Spacer(Modifier.height(30.dp))
+
+                OutlinedTextField(
+                    value = user, onValueChange = { user = it },
+                    label = { Text(stringResource(Res.string.login_user_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(10.dp))
+                OutlinedTextField(
+                    value = pass, onValueChange = { pass = it },
+                    label = { Text(stringResource(Res.string.login_pass_hint)) },
+                    singleLine = true,
+                    visualTransformation = if (passVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        IconButton(onClick = { passVisible = !passVisible }) {
+                            Icon(if (passVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff, null)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(Modifier.height(20.dp))
+
+                Button(
+                    onClick = {
+                        // SIMULACIÓN DE CARGA (2 SEGUNDOS)
+                        scope.launch {
+                            isLoading = true
+                            delay(2000) // Espera 2 segundos
+                            isLoading = false
+                            onLoginSuccess() // Navega al Home
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                    enabled = !isLoading // Deshabilitar si carga
+                ) {
+                    Text(stringResource(Res.string.login_btn))
+                }
+
+                Spacer(Modifier.height(10.dp))
+                TextButton(onClick = {}) { Text(stringResource(Res.string.login_forgot), color = Color.Gray, fontSize = 12.sp) }
+                TextButton(onClick = {}) { Text(stringResource(Res.string.login_no_account), color = GreenPrimary, fontWeight = FontWeight.Bold) }
+            }
         }
 
-        Spacer(Modifier.height(24.dp))
-        // TEXTOS CAMBIADOS A RECURSOS
-        Text(stringResource(Res.string.login_title), fontSize = 32.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-        Text(stringResource(Res.string.login_subtitle), color = MaterialTheme.colorScheme.secondary)
-
-        Spacer(Modifier.height(40.dp))
-
-        HuertaInput(email, { email = it }, stringResource(Res.string.login_user_hint), Icons.Filled.Email)
-        Spacer(Modifier.height(16.dp))
-        HuertaInput(password, { password = it }, stringResource(Res.string.login_pass_hint), Icons.Filled.Lock, isPassword = true)
-
-        Text(
-            stringResource(Res.string.login_forgot),
-            color = MaterialTheme.colorScheme.secondary,
-            modifier = Modifier.align(Alignment.End).padding(top = 10.dp),
-            fontSize = 12.sp
-        )
-
-        Spacer(Modifier.height(30.dp))
-
-        Button(
-            onClick = onLoginSuccess,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
-            shape = MaterialTheme.shapes.medium
-        ) {
-            Text(stringResource(Res.string.login_btn), fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        }
-
-        Spacer(Modifier.height(24.dp))
-
-        OutlinedButton(
-            onClick = {},
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onBackground)
-        ) {
-            Text("G   " + stringResource(Res.string.login_google))
-        }
+        // INDICADOR DE CARGA (FLOTANTE)
+        HuertaLoading(isLoading = isLoading)
     }
 }

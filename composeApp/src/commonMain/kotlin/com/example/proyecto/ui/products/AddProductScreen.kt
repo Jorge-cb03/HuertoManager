@@ -1,6 +1,5 @@
 package com.example.proyecto.ui.products
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -23,7 +22,9 @@ import proyecto.composeapp.generated.resources.*
 fun AddProductScreen(navController: NavController) {
     var name by remember { mutableStateOf("") }
     var stock by remember { mutableStateOf("") }
-    var selectedType by remember { mutableStateOf(HuertaItemType.TOOL) }
+
+    // CORREGIDO: Usamos 'ProductType' que definiste en ProductsScreen.kt
+    var selectedType by remember { mutableStateOf(ProductType.TOOL) }
     var expandedType by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -65,7 +66,8 @@ fun AddProductScreen(navController: NavController) {
                         disabledTextColor = MaterialTheme.colorScheme.onSurface,
                         disabledBorderColor = MaterialTheme.colorScheme.outline,
                         disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 )
                 Box(Modifier.matchParentSize().clickable { expandedType = true })
@@ -74,7 +76,8 @@ fun AddProductScreen(navController: NavController) {
                     expanded = expandedType,
                     onDismissRequest = { expandedType = false }
                 ) {
-                    HuertaItemType.entries.forEach { type ->
+                    // CORREGIDO: Iteramos sobre ProductType.entries
+                    ProductType.entries.forEach { type ->
                         DropdownMenuItem(
                             text = { Text(type.name) },
                             onClick = {
