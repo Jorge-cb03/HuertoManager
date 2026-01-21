@@ -136,5 +136,20 @@
 
     <string name="menu_edit">Editar</string>
     <string name="menu_delete">Eliminar</string>
+    <string name="menu_add_garden">Añadir Jardinera</string>
+    <string name="menu_delete_garden">Eliminar Jardinera</string>
+
+    <string name="dialog_garden_add_title">Nueva Jardinera</string>
+    <string name="dialog_garden_add_hint">Nombre de la jardinera</string>
+
+    <string name="dialog_garden_delete_title">¿Eliminar Jardinera?</string>
+    <string name="dialog_garden_delete_msg">Se borrarán todas las plantas de esta jardinera.</string>
+
+    <string name="dialog_success_title">Operación Exitosa</string>
+    <string name="dialog_success_garden_created">Jardinera creada correctamente.</string>
+    <string name="dialog_success_garden_deleted">Jardinera eliminada.</string>
+    <string name="dialog_success_product_saved">Producto guardado en el inventario.</string>
+    <string name="dialog_success_diary_saved">Tarea guardada en el diario.</string>
+    <string name="dialog_btn_ok">Aceptar</string>
 
 </resources>
