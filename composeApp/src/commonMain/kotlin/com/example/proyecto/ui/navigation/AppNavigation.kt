@@ -17,7 +17,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 
-// IMPORTS
+// IMPORTS DE TUS PANTALLAS
 import com.example.proyecto.ui.components.BottomMenu
 import com.example.proyecto.ui.login.LoginScreen
 import com.example.proyecto.ui.home.HomeScreen
@@ -26,19 +26,26 @@ import com.example.proyecto.ui.garden.GardenScreen
 import com.example.proyecto.ui.garden.GardenSlotDetailScreen
 import com.example.proyecto.ui.diary.DiaryScreen
 import com.example.proyecto.ui.profile.ProfileScreen
+import com.example.proyecto.ui.products.AddProductScreen
+import com.example.proyecto.ui.diary.AddDiaryEntryScreen
+import com.example.proyecto.ui.alerts.AlertsScreen // Importa Alerts si lo usas
 
 object AppScreens {
     const val Login = "login"
     const val Home = "home"
-    const val Garden = "garden"       // Cuadrícula de Jardineras
-    const val Diary = "diary"         // Calendario/Diario
-    const val Products = "products"   // Inventario (Herramientas/Semillas)
+    const val Garden = "garden"
+    const val Diary = "diary"
+    const val Products = "products"
     const val Profile = "profile"
 
     const val ProductDetail = "product_detail"
-    // Ruta dinámica para el detalle de un hueco
     const val GardenSlotDetail = "garden_slot_detail/{slotName}"
     fun createSlotDetailRoute(slotName: String) = "garden_slot_detail/$slotName"
+
+    // NUEVAS RUTAS
+    const val AddProduct = "add_product"
+    const val AddDiaryEntry = "add_diary_entry"
+    const val Alerts = "alerts"
 }
 
 @Composable
@@ -70,17 +77,21 @@ fun AppNavigation() {
             }
 
             // HOME
-            composable(AppScreens.Home) { HomeScreen() }
-
-            // JARDINERAS (Tu cuadrícula de 8 huecos)
-            composable(AppScreens.Garden) {
-                GardenScreen(navController = navController)
-                // Nota: Dentro de GardenScreen debes usar:
-                // navController.navigate(AppScreens.createSlotDetailRoute("A1"))
-                // cuando se haga clic en un hueco lleno.
+            composable(AppScreens.Home) {
+                HomeScreen(navController = navController)
             }
 
-            // DETALLE DEL HUECO (Timeline del tomate, etc.)
+            // AVISOS (Nueva)
+            composable(AppScreens.Alerts) {
+                AlertsScreen(navController = navController)
+            }
+
+            // JARDINERAS
+            composable(AppScreens.Garden) {
+                GardenScreen(navController = navController)
+            }
+
+            // DETALLE DEL HUECO
             composable(
                 route = AppScreens.GardenSlotDetail,
                 arguments = listOf(navArgument("slotName") { type = NavType.StringType })
@@ -89,15 +100,24 @@ fun AppNavigation() {
                 GardenSlotDetailScreen(navController = navController, slotName = slotName)
             }
 
-            // DIARIO (Calendario)
-            composable(AppScreens.Diary) { DiaryScreen() }
+            // DIARIO (Corregido: Ahora pasamos navController)
+            composable(AppScreens.Diary) {
+                DiaryScreen(navController = navController)
+            }
 
-            // INVENTARIO (Antes productos, ahora herramientas/semillas)
+            // AÑADIR ENTRADA DIARIO (Nueva)
+            composable(AppScreens.AddDiaryEntry) {
+                AddDiaryEntryScreen(navController = navController)
+            }
+
+            // INVENTARIO / PRODUCTOS (Corregido: Ya no pide onAddProduct)
             composable(AppScreens.Products) {
-                ProductsScreen(
-                    navController = navController,
-                    onAddProduct = { /* Navegar a añadir item */ }
-                )
+                ProductsScreen(navController = navController)
+            }
+
+            // AÑADIR PRODUCTO (Nueva)
+            composable(AppScreens.AddProduct) {
+                AddProductScreen(navController = navController)
             }
 
             // PERFIL
@@ -105,12 +125,5 @@ fun AppNavigation() {
                 ProfileScreen()
             }
         }
-    }
-}
-
-@Composable
-fun PantallaEnConstruccion(nombre: String) {
-    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Pantalla $nombre", color = MaterialTheme.colorScheme.onBackground)
     }
 }

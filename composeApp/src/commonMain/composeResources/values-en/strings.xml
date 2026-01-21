@@ -8,6 +8,7 @@
     <string name="login_btn">Sign In</string>
     <string name="login_forgot">Forgot Password?</string>
     <string name="login_google">Continue with Google</string>
+    <string name="login_no_account">No account? Sign up</string>
 
     <string name="home_greeting">Good morning,</string>
     <string name="home_role">Farmer</string>
@@ -22,11 +23,19 @@
     <string name="alert_review_title">Monthly Review</string>
     <string name="alert_review_desc">Whole garden - Tomorrow</string>
 
+    <string name="alert_dialog_title">Schedule Alert</string>
+    <string name="alert_name_hint">Name (e.g. Watering)</string>
+    <string name="alert_type_hint">Type (e.g. Fertilizer)</string>
+    <string name="alert_date_label">Alert Date</string>
+    <string name="alert_save">Save Alert</string>
+    <string name="alert_cancel">Cancel</string>
+
     <string name="garden_empty">Empty</string>
     <string name="garden_popup_title">What to plant?</string>
     <string name="garden_popup_cancel">Cancel</string>
     <string name="garden_menu_harvest">Harvest</string>
     <string name="garden_menu_remove">Remove</string>
+    <string name="garden_days_planted">days planted</string>
 
     <string name="products_title">Inventory</string>
     <string name="products_add_btn">Add to inventory</string>
@@ -37,6 +46,14 @@
     <string name="type_chemical">Supply</string>
     <string name="type_plant">Plant</string>
 
+    <string name="add_prod_title">New Product</string>
+    <string name="add_prod_name">Product Name</string>
+    <string name="add_prod_stock">Stock / Quantity</string>
+    <string name="add_prod_type">Product Type</string>
+    <string name="add_prod_btn">Save to Inventory</string>
+
+    <string name="profile_title">Profile</string>
+    <string name="profile_logout">Logout</string>
     <string name="profile_section_personal">PERSONAL DETAILS</string>
     <string name="profile_name_label">FULL NAME</string>
     <string name="profile_email_label">EMAIL ADDRESS</string>
@@ -52,6 +69,12 @@
     <string name="diary_irrigation_desc">Automatic irrigation active.</string>
     <string name="diary_review_title">Review</string>
     <string name="diary_review_desc">General pest review.</string>
+
+    <string name="add_diary_title">New Task</string>
+    <string name="add_diary_task">Task Title</string>
+    <string name="add_diary_desc">Short Description</string>
+    <string name="add_diary_btn">Save to Diary</string>
+    <string name="diary_select_garden">Select Garden</string>
 
     <string name="month_1">January</string>
     <string name="month_2">February</string>
