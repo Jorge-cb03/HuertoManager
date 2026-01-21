@@ -36,6 +36,15 @@
     <string name="garden_menu_harvest">Cosechar</string>
     <string name="garden_menu_remove">Arrancar</string>
     <string name="garden_days_planted">días plantado</string>
+    <string name="garden_columns">Columnas</string>
+    <string name="garden_add_row">Añadir Fila</string>
+    <string name="garden_menu_delete_content">Arrancar Planta</string>
+    <string name="garden_menu_hide_slot">Quitar Hueco (Diseño)</string>
+    <string name="garden_restore_slot">Restaurar Hueco</string>
+    <string name="garden_rename_title">Renombrar Jardinera</string>
+    <string name="garden_rename_label">Nuevo nombre</string>
+    <string name="garden_rename_save">Guardar</string>
+
 
     <string name="products_title">Inventario</string>
     <string name="products_add_btn">Añadir al inventario</string>

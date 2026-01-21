@@ -6,7 +6,6 @@ import androidx.compose.ui.graphics.Color
 val GreenPrimary = Color(0xFF5F9F70)       // Verde Principal
 val GreenSecondary = Color(0xFF4DB6AC)     // Verde Azulado (Salud)
 val RedDanger = Color(0xFFE57373)          // Rojo Alerta
-val PurpleAccent = Color(0xFF8B5CF6)       // Acento (Botón +)
 
 // --- MODO OSCURO (Referencia Imágenes) ---
 val DarkBg = Color(0xFF121212)

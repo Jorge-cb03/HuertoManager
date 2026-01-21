@@ -26,7 +26,7 @@ import androidx.navigation.NavController
 import com.example.proyecto.ui.HuertaCard
 import com.example.proyecto.ui.navigation.AppScreens
 import com.example.proyecto.ui.theme.GreenPrimary
-import com.example.proyecto.ui.theme.PurpleAccent
+
 import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 import kotlinx.datetime.*
@@ -92,7 +92,7 @@ fun DiaryScreen(navController: NavController) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = { navController.navigate(AppScreens.AddDiaryEntry) },
-                containerColor = PurpleAccent,
+                containerColor = GreenPrimary,
                 contentColor = Color.White
             ) { Icon(Icons.Filled.Edit, null) }
         }

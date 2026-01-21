@@ -36,6 +36,14 @@
     <string name="garden_menu_harvest">Harvest</string>
     <string name="garden_menu_remove">Remove</string>
     <string name="garden_days_planted">days planted</string>
+    <string name="garden_columns">Columns</string>
+    <string name="garden_add_row">Add Row</string>
+    <string name="garden_menu_delete_content">Remove Plant</string>
+    <string name="garden_menu_hide_slot">Remove Slot (Layout)</string>
+    <string name="garden_restore_slot">Restore Slot</string>
+    <string name="garden_rename_title">Rename Garden</string>
+    <string name="garden_rename_label">New Name</string>
+    <string name="garden_rename_save">Save</string>
 
     <string name="products_title">Inventory</string>
     <string name="products_add_btn">Add to inventory</string>

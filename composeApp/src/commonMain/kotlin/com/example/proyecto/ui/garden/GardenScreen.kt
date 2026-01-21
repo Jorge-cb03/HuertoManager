@@ -2,6 +2,7 @@ package com.example.proyecto.ui.garden
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -14,29 +15,38 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.proyecto.ui.StatusPill
 import com.example.proyecto.ui.navigation.AppScreens
+import com.example.proyecto.ui.theme.GreenPrimary
+import com.example.proyecto.ui.theme.RedDanger
 import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 
-// Modelos de datos
+// --- MODELOS DE DATOS ---
 data class GardenSlot(
     val id: String,
     val positionName: String,
     val contentName: String?,
     val status: String?,
-    val icon: ImageVector?
+    val icon: ImageVector?,
+    val isVisible: Boolean = true
 )
 
 data class GardenPage(
     val id: String,
     val name: String,
+    val columns: Int,
     val slots: List<GardenSlot>
 )
 
@@ -45,52 +55,97 @@ data class GardenPage(
 fun GardenScreen(navController: NavController) {
     var currentGardenIndex by remember { mutableStateOf(0) }
     var showPlantSelector by remember { mutableStateOf(false) }
+    var selectedSlotIdForPlanting by remember { mutableStateOf("") }
 
-    // Datos simulados
+    // Estado para renombrar jardinera
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var tempGardenName by remember { mutableStateOf("") }
+
+    // --- DATOS INICIALES (4x2 por defecto) ---
     var gardens by remember {
         mutableStateOf(
             listOf(
-                GardenPage("1", "Invernadero", listOf(
-                    GardenSlot("s1", "1", "Tomates", "Sano", Icons.Filled.Eco),
-                    GardenSlot("s2", "2", "Lechugas", "Enfermo", Icons.Filled.Grass),
-                    GardenSlot("s3", "3", null, null, null),
-                    GardenSlot("s4", "4", null, null, null),
-                    GardenSlot("s5", "5", "Zanahorias", "Sano", Icons.Filled.Eco),
-                    GardenSlot("s6", "6", null, null, null),
-                    GardenSlot("s7", "7", null, null, null),
-                    GardenSlot("s8", "8", null, null, null)
-                )),
-                GardenPage("2", "Terraza", List(8) { idx -> GardenSlot("t$idx", "${idx+1}", null, null, null) }),
-                GardenPage("3", "Cama Alta", List(8) { idx -> if(idx == 0) GardenSlot("c$idx", "1", "Flores", "Sano", Icons.Filled.LocalFlorist) else GardenSlot("c$idx", "${idx+1}", null, null, null) })
+                GardenPage(
+                    id = "1",
+                    name = "Invernadero",
+                    columns = 2,
+                    slots = List(8) { idx ->
+                        GardenSlot(
+                            id = "s$idx",
+                            positionName = "${idx+1}",
+                            contentName = if(idx==0) "Tomates" else null,
+                            status = if(idx==0) "Sano" else null,
+                            icon = if(idx==0) Icons.Filled.Eco else null
+                        )
+                    }
+                ),
+                GardenPage(
+                    id = "2",
+                    name = "Terraza",
+                    columns = 2,
+                    slots = List(8) { idx ->
+                        GardenSlot("t$idx", "${idx+1}", null, null, null)
+                    }
+                )
             )
         )
     }
 
     val currentGarden = gardens[currentGardenIndex]
 
-    Scaffold(containerColor = MaterialTheme.colorScheme.background) { padding ->
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.background
+    ) { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // CABECERA
+            // --- CABECERA ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = currentGarden.name,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    // TÍTULO CON DETECCIÓN DE DOBLE CLIC
+                    Text(
+                        text = currentGarden.name,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.pointerInput(Unit) {
+                            detectTapGestures(
+                                onDoubleTap = {
+                                    tempGardenName = currentGarden.name // Cargar nombre actual
+                                    showRenameDialog = true // Abrir diálogo
+                                }
+                            )
+                        }
+                    )
+                    Text(
+                        text = "${currentGarden.columns} ${stringResource(Res.string.garden_columns)}",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
+                }
 
+                // BOTÓN "NUEVA JARDINERA"
                 Surface(
-                    onClick = { /* Lógica añadir jardinera */ },
+                    onClick = {
+                        val newId = (gardens.size + 1).toString()
+                        val newPage = GardenPage(
+                            id = newId,
+                            name = "Nueva Jardinera $newId",
+                            columns = 2, // Siempre nace como 4x2 (8 huecos, 2 columnas)
+                            slots = List(8) { idx ->
+                                GardenSlot("n${newId}_$idx", "${idx+1}", null, null, null)
+                            }
+                        )
+                        gardens = gardens + newPage
+                        currentGardenIndex = gardens.size - 1
+                    },
                     shape = CircleShape,
-                    color = Color(0xFF8B5CF6),
+                    color = GreenPrimary,
                     modifier = Modifier.size(48.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
@@ -99,67 +154,178 @@ fun GardenScreen(navController: NavController) {
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(16.dp))
 
-            // GRID
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.weight(1f)
-            ) {
-                items(currentGarden.slots) { slot ->
-                    GardenSlotCard(
-                        slot = slot,
-                        onClick = {
-                            if (slot.contentName == null) {
-                                showPlantSelector = true
-                            } else {
-                                navController.navigate(AppScreens.createSlotDetailRoute(slot.positionName))
-                            }
-                        },
-                        onClearSlot = {
-                            val newGardens = gardens.map { garden ->
-                                if (garden.id == currentGarden.id) {
-                                    val newSlots = garden.slots.map { s ->
-                                        if (s.id == slot.id) s.copy(contentName = null, status = null, icon = null) else s
-                                    }
-                                    garden.copy(slots = newSlots)
-                                } else garden
-                            }
-                            gardens = newGardens
-                        }
-                    )
-                }
-            }
-
-            // NAVEGACIÓN INFERIOR
+            // --- CONTROLES DE DIMENSIÓN ---
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 10.dp)
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                    .padding(8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // CONTROL COLUMNAS
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(
+                        onClick = {
+                            if (currentGarden.columns > 1) {
+                                updateGarden(gardens, currentGardenIndex) { it.copy(columns = it.columns - 1) }
+                                    .also { gardens = it }
+                            }
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) { Icon(Icons.Filled.Remove, null) }
+
+                    Text(
+                        "${currentGarden.columns} Col",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                        fontSize = 14.sp
+                    )
+
+                    IconButton(
+                        onClick = {
+                            // Lógica para añadir columna manteniendo filas rectangulares
+                            val currentRows = (currentGarden.slots.size + currentGarden.columns - 1) / currentGarden.columns
+                            val totalSlotsNeeded = currentRows * (currentGarden.columns + 1)
+                            val slotsToAddCount = totalSlotsNeeded - currentGarden.slots.size
+
+                            val newSlots = List(slotsToAddCount) {
+                                GardenSlot(
+                                    id = "${currentGarden.id}_extra_${System.currentTimeMillis()}_$it",
+                                    positionName = "${currentGarden.slots.size + it + 1}",
+                                    contentName = null, status = null, icon = null, isVisible = true
+                                )
+                            }
+
+                            updateGarden(gardens, currentGardenIndex) {
+                                it.copy(columns = it.columns + 1, slots = it.slots + newSlots)
+                            }.also { gardens = it }
+                        },
+                        modifier = Modifier.size(32.dp)
+                    ) { Icon(Icons.Filled.Add, null) }
+                }
+
+                // BOTÓN AÑADIR FILA
+                Button(
+                    onClick = {
+                        val newSlots = List(currentGarden.columns) {
+                            GardenSlot(
+                                id = "${currentGarden.id}_${System.currentTimeMillis()}_$it",
+                                positionName = "${currentGarden.slots.size + it + 1}",
+                                contentName = null, status = null, icon = null, isVisible = true
+                            )
+                        }
+                        updateGarden(gardens, currentGardenIndex) { it.copy(slots = it.slots + newSlots) }
+                            .also { gardens = it }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                    modifier = Modifier.height(36.dp)
+                ) {
+                    Icon(Icons.Filled.TableRows, null, modifier = Modifier.size(16.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text(stringResource(Res.string.garden_add_row), fontSize = 12.sp)
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // --- GRID DE JARDINERA ---
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(currentGarden.columns),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                items(currentGarden.slots) { slot ->
+                    if (slot.isVisible) {
+                        GardenSlotCard(
+                            slot = slot,
+                            onClick = {
+                                if (slot.contentName == null) {
+                                    selectedSlotIdForPlanting = slot.id
+                                    showPlantSelector = true
+                                } else {
+                                    navController.navigate(AppScreens.createSlotDetailRoute(slot.positionName))
+                                }
+                            },
+                            onAction = { action ->
+                                when(action) {
+                                    SlotAction.HARVEST -> {
+                                        updateSlot(gardens, currentGardenIndex, slot.id) { it.copy(contentName = null, status = null, icon = null) }
+                                            .also { gardens = it }
+                                    }
+                                    SlotAction.HIDE -> {
+                                        updateSlot(gardens, currentGardenIndex, slot.id) { it.copy(isVisible = false) }
+                                            .also { gardens = it }
+                                    }
+                                }
+                            }
+                        )
+                    } else {
+                        GhostSlotCard {
+                            updateSlot(gardens, currentGardenIndex, slot.id) { it.copy(isVisible = true) }
+                                .also { gardens = it }
+                        }
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // PAGINACIÓN
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(50))
                     .padding(horizontal = 10.dp, vertical = 5.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    onClick = { if (currentGardenIndex > 0) currentGardenIndex-- },
-                    enabled = currentGardenIndex > 0
-                ) {
-                    Icon(Icons.Filled.ChevronLeft, null, tint = MaterialTheme.colorScheme.onSurface)
-                }
-                Text("${currentGardenIndex + 1} / ${gardens.size}", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.Bold)
-                IconButton(
-                    onClick = { if (currentGardenIndex < gardens.size - 1) currentGardenIndex++ },
-                    enabled = currentGardenIndex < gardens.size - 1
-                ) {
-                    Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface)
-                }
+                IconButton(onClick = { if (currentGardenIndex > 0) currentGardenIndex-- }, enabled = currentGardenIndex > 0) { Icon(Icons.Filled.ChevronLeft, null) }
+                Text("${currentGardenIndex + 1} / ${gardens.size}", fontWeight = FontWeight.Bold)
+                IconButton(onClick = { if (currentGardenIndex < gardens.size - 1) currentGardenIndex++ }, enabled = currentGardenIndex < gardens.size - 1) { Icon(Icons.Filled.ChevronRight, null) }
             }
         }
 
-        // POPUP PLANTAR TRADUCIDO
+        // --- DIÁLOGO DE RENOMBRAR JARDINERA ---
+        if (showRenameDialog) {
+            AlertDialog(
+                onDismissRequest = { showRenameDialog = false },
+                title = { Text(stringResource(Res.string.garden_rename_title)) },
+                text = {
+                    OutlinedTextField(
+                        value = tempGardenName,
+                        onValueChange = { tempGardenName = it },
+                        label = { Text(stringResource(Res.string.garden_rename_label)) },
+                        singleLine = true
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (tempGardenName.isNotBlank()) {
+                                updateGarden(gardens, currentGardenIndex) { it.copy(name = tempGardenName) }
+                                    .also { gardens = it }
+                            }
+                            showRenameDialog = false
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                    ) {
+                        Text(stringResource(Res.string.garden_rename_save))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showRenameDialog = false }) {
+                        Text(stringResource(Res.string.garden_popup_cancel))
+                    }
+                }
+            )
+        }
+
+        // POPUP PLANTA
         if (showPlantSelector) {
             AlertDialog(
                 onDismissRequest = { showPlantSelector = false },
@@ -167,75 +333,88 @@ fun GardenScreen(navController: NavController) {
                 title = { Text(stringResource(Res.string.garden_popup_title)) },
                 text = {
                     Column {
-                        ListItem(headlineContent = { Text("Tomates") }, leadingContent = { Icon(Icons.Filled.Eco, null) }, modifier = Modifier.clickable { showPlantSelector = false })
+                        ListItem(headlineContent = { Text("Tomates") }, leadingContent = { Icon(Icons.Filled.Eco, null) }, modifier = Modifier.clickable {
+                            updateSlot(gardens, currentGardenIndex, selectedSlotIdForPlanting) { it.copy(contentName = "Tomates", status = "Sano", icon = Icons.Filled.Eco) }.also { gardens = it }
+                            showPlantSelector = false
+                        })
                         ListItem(headlineContent = { Text("Lechugas") }, leadingContent = { Icon(Icons.Filled.Eco, null) }, modifier = Modifier.clickable { showPlantSelector = false })
                     }
                 },
-                confirmButton = {
-                    TextButton(onClick = { showPlantSelector = false }) {
-                        Text(stringResource(Res.string.garden_popup_cancel))
-                    }
-                }
+                confirmButton = { TextButton(onClick = { showPlantSelector = false }) { Text(stringResource(Res.string.garden_popup_cancel)) } }
             )
         }
     }
 }
 
+// --- UTILIDADES ---
+enum class SlotAction { HARVEST, HIDE }
+
+fun updateGarden(list: List<GardenPage>, index: Int, update: (GardenPage) -> GardenPage): List<GardenPage> {
+    val newList = list.toMutableList()
+    newList[index] = update(newList[index])
+    return newList
+}
+
+fun updateSlot(list: List<GardenPage>, gardenIndex: Int, slotId: String, update: (GardenSlot) -> GardenSlot): List<GardenPage> {
+    val newList = list.toMutableList()
+    val currentGarden = newList[gardenIndex]
+    val newSlots = currentGarden.slots.map { if (it.id == slotId) update(it) else it }
+    newList[gardenIndex] = currentGarden.copy(slots = newSlots)
+    return newList
+}
+
+// --- TARJETAS ---
 @Composable
-fun GardenSlotCard(slot: GardenSlot, onClick: () -> Unit, onClearSlot: () -> Unit) {
+fun GardenSlotCard(slot: GardenSlot, onClick: () -> Unit, onAction: (SlotAction) -> Unit) {
     val isEmpty = slot.contentName == null
-    val bgColor = if (isEmpty) MaterialTheme.colorScheme.surface.copy(alpha = 0.5f) else MaterialTheme.colorScheme.surface
+    val bgColor = if (isEmpty) MaterialTheme.colorScheme.surfaceVariant.copy(alpha=0.5f) else MaterialTheme.colorScheme.surface
     var showMenu by remember { mutableStateOf(false) }
 
     Card(
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = bgColor),
         onClick = onClick,
         modifier = Modifier.fillMaxWidth().aspectRatio(1f)
     ) {
-        Box(modifier = Modifier.fillMaxSize().padding(12.dp)) {
-            Text(slot.positionName, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f), fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.TopStart))
-
-            // MENÚ BORRAR TRADUCIDO
-            if (!isEmpty) {
-                Box(modifier = Modifier.align(Alignment.TopEnd)) {
-                    IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Filled.MoreVert, "Opciones", tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+        Box(modifier = Modifier.fillMaxSize().padding(8.dp)) {
+            Text(slot.positionName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), modifier = Modifier.align(Alignment.TopStart))
+            Box(modifier = Modifier.align(Alignment.TopEnd)) {
+                IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.Filled.MoreVert, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                }
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }, modifier = Modifier.background(MaterialTheme.colorScheme.surface)) {
+                    if (!isEmpty) {
+                        DropdownMenuItem(text = { Text(stringResource(Res.string.garden_menu_harvest)) }, leadingIcon = { Icon(Icons.Filled.Agriculture, null, tint = GreenPrimary) }, onClick = { showMenu = false; onAction(SlotAction.HARVEST) })
+                        DropdownMenuItem(text = { Text(stringResource(Res.string.garden_menu_delete_content)) }, leadingIcon = { Icon(Icons.Filled.Delete, null, tint = RedDanger) }, onClick = { showMenu = false; onAction(SlotAction.HARVEST) })
                     }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false },
-                        modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.garden_menu_harvest)) },
-                            leadingIcon = { Icon(Icons.Filled.Agriculture, null, tint = Color(0xFF4DB6AC)) },
-                            onClick = { showMenu = false; onClearSlot() }
-                        )
-                        DropdownMenuItem(
-                            text = { Text(stringResource(Res.string.garden_menu_remove)) },
-                            leadingIcon = { Icon(Icons.Filled.Delete, null, tint = Color(0xFFE57373)) },
-                            onClick = { showMenu = false; onClearSlot() }
-                        )
-                    }
+                    DropdownMenuItem(text = { Text(stringResource(Res.string.garden_menu_hide_slot), fontSize = 12.sp) }, leadingIcon = { Icon(Icons.Filled.VisibilityOff, null, tint = MaterialTheme.colorScheme.secondary) }, onClick = { showMenu = false; onAction(SlotAction.HIDE) })
                 }
             }
-
-            // CONTENIDO
             Column(modifier = Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
                 if (isEmpty) {
-                    Icon(Icons.Filled.AddCircleOutline, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f), modifier = Modifier.size(32.dp))
-                    Text(stringResource(Res.string.garden_empty), fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                    Icon(Icons.Filled.AddCircleOutline, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f), modifier = Modifier.size(24.dp))
+                    Text(stringResource(Res.string.garden_empty), fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
                 } else {
-                    Icon(slot.icon ?: Icons.Filled.Eco, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(32.dp))
-                    Spacer(Modifier.height(8.dp))
-                    Text(slot.contentName ?: "", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                    Icon(slot.icon ?: Icons.Filled.Eco, null, tint = GreenPrimary, modifier = Modifier.size(32.dp))
+                    Text(slot.contentName ?: "", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold, maxLines = 1)
                     if (slot.status != null) {
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(2.dp))
                         StatusPill(status = slot.status)
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun GhostSlotCard(onRestore: () -> Unit) {
+    val stroke = Stroke(width = 2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f))
+    val color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+    Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).padding(4.dp).clip(RoundedCornerShape(12.dp)).clickable { onRestore() }.drawBehind { drawRoundRect(color = color, style = stroke, cornerRadius = androidx.compose.ui.geometry.CornerRadius(12.dp.toPx())) }, contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(Icons.Filled.Add, null, tint = color)
+            Text(stringResource(Res.string.garden_restore_slot), fontSize = 8.sp, color = color, lineHeight = 10.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
         }
     }
 }
