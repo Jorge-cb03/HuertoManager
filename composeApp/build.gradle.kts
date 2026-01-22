@@ -44,6 +44,7 @@ kotlin {
             implementation(libs.navigation.compose)
             implementation(libs.room.runtime)
             implementation(libs.sqlite.bundled)
+            implementation(libs.androidx.lifecycle.viewmodel)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
