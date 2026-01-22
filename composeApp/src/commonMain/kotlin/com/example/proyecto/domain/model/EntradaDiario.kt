@@ -4,8 +4,9 @@ import kotlinx.datetime.LocalDate
 
 data class EntradaDiario(
     val id: String,
-    val fecha: LocalDate, // La fecha de la nota
-    val titulo: String,   // Ej: "Sembrar"
-    val descripcion: String, // Ej: "Sembrar manzanas"
-    val jardineraNombre: String // Para saber en qué jardinera fue (ej: "jardinera 1")
+    val fecha: LocalDate,      // Fecha real (no String ni Long)
+    val titulo: String,
+    val descripcion: String,
+    val tipo: TipoEntrada,     // <--- IMPORTANTE: Usamos el Enum, no String
+    val fotoUrl: String? = null // Opcional, para cuando metamos fotos
 )

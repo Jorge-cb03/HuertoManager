@@ -24,4 +24,7 @@ interface HuertaDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEntrada(entrada: DiarioEntity)
+
+    @Query("SELECT * FROM jardineras WHERE id = :id")
+    suspend fun getJardineraById(id: String): JardineraEntity?
 }
