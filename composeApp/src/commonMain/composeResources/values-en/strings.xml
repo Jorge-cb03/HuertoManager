@@ -51,7 +51,7 @@
     <string name="product_stock_label">Stock:</string>
     <string name="type_tool">Tool</string>
     <string name="type_seed">Seed</string>
-    <string name="type_chemical">Supply</string>
+    <string name="type_chemical">Chemical</string>
     <string name="type_plant">Plant</string>
 
     <string name="add_prod_title">New Product</string>
@@ -135,5 +135,13 @@
 
     <string name="menu_edit">Edit</string>
     <string name="menu_delete">Delete</string>
+
+    <string name="menu_garden">My Garden</string>
+    <string name="menu_products">Products</string>
+    <string name="menu_home">Home</string>
+    <string name="menu_diary">Diary</string>
+    <string name="menu_profile">Profile</string>
+
+    <string name="type_fertilizer">Fertilizer</string>
 
 </resources>

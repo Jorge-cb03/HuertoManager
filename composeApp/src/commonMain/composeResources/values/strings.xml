@@ -52,7 +52,7 @@
     <string name="product_stock_label">Stock:</string>
     <string name="type_tool">Herramienta</string>
     <string name="type_seed">Semilla</string>
-    <string name="type_chemical">Insumo</string>
+    <string name="type_chemical">Quimico</string>
     <string name="type_plant">Planta</string>
 
     <string name="add_prod_title">Nuevo Producto</string>
@@ -151,5 +151,13 @@
     <string name="dialog_success_product_saved">Producto guardado en el inventario.</string>
     <string name="dialog_success_diary_saved">Tarea guardada en el diario.</string>
     <string name="dialog_btn_ok">Aceptar</string>
+
+    <string name="menu_garden">Mi huerta</string>
+    <string name="menu_products">Productos</string>
+    <string name="menu_home">Inicio</string>
+    <string name="menu_diary">Diario</string>
+    <string name="menu_profile">Perfil</string>
+
+    <string name="type_fertilizer">Fertilizante</string>
 
 </resources>

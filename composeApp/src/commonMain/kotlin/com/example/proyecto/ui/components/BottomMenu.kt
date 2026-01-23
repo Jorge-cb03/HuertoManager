@@ -9,14 +9,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.proyecto.ui.navigation.AppScreens
+// IMPORTANTE: Estos imports para usar los strings
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
+import proyecto.composeapp.generated.resources.*
 
-// Asegúrate de que las rutas ("home", "garden", "products"...) coinciden con AppScreens
-sealed class BottomNavItem(val title: String, val icon: ImageVector, val route: String) {
-    object Garden : BottomNavItem("Mi huerta", Icons.Default.Eco, AppScreens.Garden)
-    object Products : BottomNavItem("Productos", Icons.Default.ShoppingCart, AppScreens.Products) // <--- ESTA ES LA CLAVE
-    object Home : BottomNavItem("Inicio", Icons.Default.Home, AppScreens.Home)
-    object Diary : BottomNavItem("Diario", Icons.Default.Edit, AppScreens.Diary)
-    object Profile : BottomNavItem("Perfil", Icons.Default.Person, AppScreens.Profile)
+// Ahora BottomNavItem guarda una referencia al recurso, no el texto directo
+sealed class BottomNavItem(val resource: StringResource, val icon: ImageVector, val route: String) {
+    object Garden : BottomNavItem(Res.string.menu_garden, Icons.Default.Eco, AppScreens.Garden)
+    object Products : BottomNavItem(Res.string.menu_products, Icons.Default.ShoppingCart, AppScreens.Products)
+    object Home : BottomNavItem(Res.string.menu_home, Icons.Default.Home, AppScreens.Home)
+    object Diary : BottomNavItem(Res.string.menu_diary, Icons.Default.Edit, AppScreens.Diary)
+    object Profile : BottomNavItem(Res.string.menu_profile, Icons.Default.Person, AppScreens.Profile)
 }
 
 @Composable
@@ -34,18 +38,14 @@ fun BottomMenu(navController: NavController) {
         val currentRoute = navBackStackEntry?.destination?.route
 
         items.forEach { item ->
+            val title = stringResource(item.resource) // Obtiene el texto según el idioma del móvil
             NavigationBarItem(
-                icon = { Icon(item.icon, contentDescription = item.title) },
-                label = { Text(item.title) }, // Puedes quitar esto si quieres solo iconos
+                icon = { Icon(item.icon, contentDescription = title) },
+                label = { Text(title) },
                 selected = currentRoute == item.route,
                 onClick = {
-                    // --- CORRECCIÓN AQUÍ ---
-                    // Antes teníamos un IF que bloqueaba products. Lo hemos quitado.
-                    // Ahora TODOS los botones navegan.
-
-                    if (currentRoute != item.route) { // Evita recargar si ya estás ahí
+                    if (currentRoute != item.route) {
                         navController.navigate(item.route) {
-                            // Esto hace que al dar atrás vuelvas al Home
                             popUpTo(AppScreens.Home) { saveState = true }
                             launchSingleTop = true
                             restoreState = true

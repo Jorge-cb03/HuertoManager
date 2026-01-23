@@ -22,7 +22,7 @@ import com.example.proyecto.ui.theme.RedDanger
 import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 
-enum class ProductType { TOOL, SEED, CHEMICAL, OTHER }
+enum class ProductType { TOOL, SEED, CHEMICAL, FERTILIZER, OTHER }
 
 data class InventoryItem(
     val id: String,
@@ -140,6 +140,7 @@ fun InventoryCard(
         ProductType.TOOL -> Icons.Filled.Build
         ProductType.SEED -> Icons.Filled.Grain
         ProductType.CHEMICAL -> Icons.Filled.Science
+        ProductType.FERTILIZER -> Icons.Filled.Science
         ProductType.OTHER -> Icons.Filled.Inventory2
     }
 
