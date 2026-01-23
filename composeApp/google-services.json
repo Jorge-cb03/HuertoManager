@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "791210199776",
+    "project_id": "huertamanager",
+    "storage_bucket": "huertamanager.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:791210199776:android:58d33fc3b2fd6311e91e85",
+        "android_client_info": {
+          "package_name": "com.example.proyecto"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDmXbmWMcW28SuIHa_Uyp3Cdf3UNxbDsLQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
