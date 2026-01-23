@@ -120,7 +120,7 @@
     <string name="about_team_title">Equipo de Desarrollo</string>
     <string name="about_team_1">Jorge (Frontend &amp; UX)</string>
     <string name="about_team_2">Ismael (Backend &amp; QA)</string>
-    <string name="about_copyright">© 2026 Proyecto Huerto manager</string>
+    <string name="about_copyright">© 2026 Proyecto Huerto manager (Descalzaputas)</string>
 
     <string name="dialog_confirm">Confirmar</string>
     <string name="dialog_cancel">Cancelar</string>

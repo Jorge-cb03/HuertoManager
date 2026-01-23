@@ -1,12 +1,11 @@
 package com.example.proyecto.ui.login
 
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
@@ -16,31 +15,41 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.proyecto.ui.HuertaLoading // <--- IMPORTANTE
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.proyecto.di.AppModule
+import com.example.proyecto.ui.HuertaLoading
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.GreenSecondary
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit) {
+fun LoginScreen(
+    onLoginSuccess: () -> Unit,
+    // Inyectamos el nuevo ViewModel
+    viewModel: LoginViewModel = viewModel { LoginViewModel(AppModule.authRepository) }
+) {
+    // Si el usuario ya estaba logueado, saltamos directos (opcional, pero buena UX)
+    LaunchedEffect(Unit) {
+        if (viewModel.isUserLoggedIn()) {
+            onLoginSuccess()
+        }
+    }
+
+    // Estados UI
     var user by remember { mutableStateOf("") }
     var pass by remember { mutableStateOf("") }
     var passVisible by remember { mutableStateOf(false) }
 
-    // Estado de carga y CoroutineScope
-    var isLoading by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
+    // Observamos el ViewModel
+    val isLoading by viewModel.isLoading.collectAsState()
+    val errorMsg by viewModel.loginError.collectAsState()
 
     Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(GreenSecondary, GreenPrimary)))) {
-        // TARJETA CENTRAL
         Card(
             modifier = Modifier.align(Alignment.Center).padding(20.dp).fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
@@ -57,11 +66,11 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
 
                 Spacer(Modifier.height(30.dp))
 
+                // CAMPOS DE TEXTO (Visuales por ahora)
                 OutlinedTextField(
                     value = user, onValueChange = { user = it },
                     label = { Text(stringResource(Res.string.login_user_hint)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    singleLine = true, modifier = Modifier.fillMaxWidth()
                 )
                 Spacer(Modifier.height(10.dp))
                 OutlinedTextField(
@@ -77,32 +86,42 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                     modifier = Modifier.fillMaxWidth()
                 )
 
+                if (errorMsg != null) {
+                    Spacer(Modifier.height(10.dp))
+                    Text(text = errorMsg!!, color = Color.Red, fontSize = 12.sp)
+                }
+
                 Spacer(Modifier.height(20.dp))
 
+                // BOTÓN NORMAL (Deshabilitado visualmente para forzar el uso del anónimo en pruebas)
                 Button(
-                    onClick = {
-                        // SIMULACIÓN DE CARGA (2 SEGUNDOS)
-                        scope.launch {
-                            isLoading = true
-                            delay(2000) // Espera 2 segundos
-                            isLoading = false
-                            onLoginSuccess() // Navega al Home
-                        }
-                    },
+                    onClick = { /* Lógica futura de usuario/pass */ },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
-                    enabled = !isLoading // Deshabilitar si carga
+                    enabled = false // Desactivado hasta Fase 4 real
                 ) {
                     Text(stringResource(Res.string.login_btn))
                 }
 
-                Spacer(Modifier.height(10.dp))
-                TextButton(onClick = {}) { Text(stringResource(Res.string.login_forgot), color = Color.Gray, fontSize = 12.sp) }
-                TextButton(onClick = {}) { Text(stringResource(Res.string.login_no_account), color = GreenPrimary, fontWeight = FontWeight.Bold) }
+                Spacer(Modifier.height(20.dp))
+                HorizontalDivider()
+                Spacer(Modifier.height(20.dp))
+
+                // --- BOTÓN LOGIN ANÓNIMO (DEV) ---
+                OutlinedButton(
+                    onClick = {
+                        viewModel.loginAnonymously(onSuccess = onLoginSuccess)
+                    },
+                    modifier = Modifier.fillMaxWidth().height(50.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = GreenPrimary)
+                ) {
+                    Icon(Icons.Filled.Person, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text("ACCESO INVITADO (DEV MODE)")
+                }
             }
         }
 
-        // INDICADOR DE CARGA (FLOTANTE)
         HuertaLoading(isLoading = isLoading)
     }
 }

@@ -1,9 +1,9 @@
 package com.example.proyecto.di
 
 import com.example.proyecto.data.local.AppDatabase
+import com.example.proyecto.data.repository.AuthRepository // IMPORTAR
 import com.example.proyecto.data.repository.HuertaRepository
 
-// Tu contenedor de dependencias manual (Simple y efectivo para KMP)
 object AppModule {
     private lateinit var database: AppDatabase
 
@@ -11,8 +11,13 @@ object AppModule {
         this.database = database
     }
 
-    // Instancia única del Repositorio
+    // Repositorio de Datos
     val huertaRepository: HuertaRepository by lazy {
         HuertaRepository(database.huertaDao())
+    }
+
+    // Repositorio de Auth (NUEVO)
+    val authRepository: AuthRepository by lazy {
+        AuthRepository()
     }
 }

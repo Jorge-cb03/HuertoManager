@@ -19,7 +19,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import com.example.proyecto.di.AppModule
 import com.example.proyecto.ui.HuertaCard
 import com.example.proyecto.ui.navigation.AppScreens
 import com.example.proyecto.ui.theme.GreenPrimary
@@ -28,6 +30,7 @@ import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 import kotlinx.datetime.*
 
+// Modelo visual (DTO para la UI)
 data class DiaryTask(
     val id: String,
     val title: String,
@@ -37,6 +40,7 @@ data class DiaryTask(
     val date: LocalDate
 )
 
+// Funciones auxiliares de fechas
 fun getDaysInMonth(month: Int, year: Int): Int {
     val start = LocalDate(year, month, 1)
     val nextMonth = start.plus(1, DateTimeUnit.MONTH)
@@ -58,34 +62,30 @@ fun getMonthNameResource(monthNumber: Int): String {
 }
 
 @Composable
-fun DiaryScreen(navController: NavController) {
+fun DiaryScreen(
+    navController: NavController,
+    // Inyectamos ViewModel
+    viewModel: DiaryViewModel = viewModel { DiaryViewModel(AppModule.huertaRepository) }
+) {
+    // 1. OBSERVAMOS DATOS REALES
+    val allTasks by viewModel.tasks.collectAsState()
+
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
     var currentYear by remember { mutableStateOf(today.year) }
     var currentMonth by remember { mutableStateOf(today.monthNumber) }
     var selectedDate by remember { mutableStateOf(today) }
+
     val daysInMonth = getDaysInMonth(currentMonth, currentYear)
     val firstDayOfWeek = getFirstDayOfWeek(currentMonth, currentYear)
 
-    val irrigationTitle = stringResource(Res.string.diary_irrigation_title)
-    val irrigationDesc = stringResource(Res.string.diary_irrigation_desc)
-    val reviewTitle = stringResource(Res.string.diary_review_title)
-    val reviewDesc = stringResource(Res.string.diary_review_desc)
-
-    // Usamos mutableStateOf para poder borrar elementos de la lista
-    var allTasks by remember(irrigationTitle, irrigationDesc, reviewTitle, reviewDesc, today) {
-        mutableStateOf(listOf(
-            DiaryTask("1", irrigationTitle, "08:00 AM", irrigationDesc, "Invernadero", today),
-            DiaryTask("2", "Poda Tomates", "08:30 AM", "Quitar chupones", "Invernadero", today),
-            DiaryTask("3", "Fertilizar", "10:00 AM", "Abono líquido", "Terraza", today),
-            DiaryTask("4", reviewTitle, "10:00 AM", reviewDesc, "Cama Alta", today.plus(5, DateTimeUnit.DAY))
-        ))
-    }
-
-    // ESTADOS PARA BORRADO
+    // Estados para borrado
     var showDeleteDialog by remember { mutableStateOf(false) }
     var taskToDelete by remember { mutableStateOf<DiaryTask?>(null) }
 
-    val tasksForDay = allTasks.filter { it.date == selectedDate }
+    // 2. FILTRAMOS LAS TAREAS REALES POR FECHA
+    //val tasksForDay = allTasks.filter { it.date == selectedDate }
+    // AHORA (Muestra TODO, ideal para probar)
+    val tasksForDay = allTasks
     val groupedTasks = tasksForDay.groupBy { it.jardineraName }
 
     Scaffold(
@@ -108,33 +108,56 @@ fun DiaryScreen(navController: NavController) {
                     val newDate = LocalDate(currentYear, currentMonth, 1).minus(1, DateTimeUnit.MONTH)
                     currentMonth = newDate.monthNumber; currentYear = newDate.year
                 }) { Icon(Icons.Filled.ChevronLeft, null) }
+
                 Text("${getMonthNameResource(currentMonth)} $currentYear", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+
                 IconButton(onClick = {
                     val newDate = LocalDate(currentYear, currentMonth, 1).plus(1, DateTimeUnit.MONTH)
                     currentMonth = newDate.monthNumber; currentYear = newDate.year
                 }) { Icon(Icons.Filled.ChevronRight, null) }
             }
 
-            // GRID CALENDARIO
+            // GRID CALENDARIO (Dibuja los días)
             LazyVerticalGrid(
                 columns = GridCells.Fixed(7),
                 modifier = Modifier.height(280.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Días vacíos al principio del mes
                 items(firstDayOfWeek) { Spacer(Modifier) }
+
+                // Días del mes
                 items(daysInMonth) { index ->
                     val dayNum = index + 1
                     val dateOfCell = LocalDate(currentYear, currentMonth, dayNum)
                     val isSelected = (dateOfCell == selectedDate)
                     val isToday = (dateOfCell == today)
 
+                    // Comprobamos si hay tareas ese día para poner un puntito (mejora visual)
+                    val hasTasks = allTasks.any { it.date == dateOfCell }
+
                     Box(
                         contentAlignment = Alignment.Center,
-                        modifier = Modifier.aspectRatio(1f).clip(CircleShape)
-                            .background(when { isSelected -> GreenPrimary; isToday -> MaterialTheme.colorScheme.surfaceVariant; else -> Color.Transparent })
+                        modifier = Modifier
+                            .aspectRatio(1f)
+                            .clip(CircleShape)
+                            .background(when {
+                                isSelected -> GreenPrimary
+                                isToday -> MaterialTheme.colorScheme.surfaceVariant
+                                else -> Color.Transparent
+                            })
                             .clickable { selectedDate = dateOfCell }
                     ) {
-                        Text("$dayNum", color = if (isSelected) Color.White else MaterialTheme.colorScheme.onBackground, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "$dayNum",
+                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onBackground,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                            if (hasTasks && !isSelected) {
+                                Box(Modifier.size(4.dp).background(GreenPrimary, CircleShape))
+                            }
+                        }
                     }
                 }
             }
@@ -166,7 +189,7 @@ fun DiaryScreen(navController: NavController) {
                             DiaryEntryCard(
                                 task = task,
                                 onEdit = {
-                                    // Navegar a editar (reusamos AddDiary pasando fecha, en el futuro pasar ID)
+                                    // Pasamos la fecha para editar (idealmente pasaríamos ID del task)
                                     val dateMillis = task.date.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
                                     navController.navigate(AppScreens.createAddDiaryRoute(dateMillis))
                                 },
@@ -192,7 +215,8 @@ fun DiaryScreen(navController: NavController) {
             confirmButton = {
                 Button(
                     onClick = {
-                        allTasks = allTasks.filter { it.id != taskToDelete!!.id }
+                        // 3. LLAMADA AL VIEWMODEL PARA BORRAR
+                        viewModel.borrarTarea(taskToDelete!!.id)
                         showDeleteDialog = false
                         taskToDelete = null
                     },
@@ -210,6 +234,7 @@ fun DiaryScreen(navController: NavController) {
     }
 }
 
+// ... La función DiaryEntryCard se queda igual ...
 @Composable
 fun DiaryEntryCard(task: DiaryTask, onEdit: () -> Unit, onDelete: () -> Unit) {
     var showMenu by remember { mutableStateOf(false) }

@@ -27,4 +27,17 @@ interface HuertaDao {
 
     @Query("SELECT * FROM jardineras WHERE id = :id")
     suspend fun getJardineraById(id: String): JardineraEntity?
+
+    @Query("SELECT * FROM diario ORDER BY fecha DESC")
+    fun getDiarioGlobal(): Flow<List<DiarioEntity>>
+
+    // --- PRODUCTOS ---
+    @Query("SELECT * FROM productos")
+    fun getProductos(): Flow<List<ProductoEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertProducto(producto: ProductoEntity)
+
+    @Query("DELETE FROM productos WHERE id = :id")
+    suspend fun deleteProducto(id: String)
 }

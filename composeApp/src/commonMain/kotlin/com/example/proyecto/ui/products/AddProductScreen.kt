@@ -1,75 +1,152 @@
 package com.example.proyecto.ui.products
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import com.example.proyecto.ui.HuertaInput
+import com.example.proyecto.di.AppModule
 import com.example.proyecto.ui.theme.GreenPrimary
-import org.jetbrains.compose.resources.stringResource
-import proyecto.composeapp.generated.resources.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddProductScreen(navController: NavController) {
+fun AddProductScreen(
+    navController: NavController,
+    // Inyectamos el mismo ViewModel que usa la lista
+    viewModel: ProductsViewModel = viewModel { ProductsViewModel(AppModule.huertaRepository) }
+) {
+    // Estados del formulario
     var name by remember { mutableStateOf("") }
-    var stock by remember { mutableStateOf("") }
-    var selectedType by remember { mutableStateOf(ProductType.TOOL) }
-    var expandedType by remember { mutableStateOf(false) }
+    var quantity by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
 
-    // ALERTA DE ÉXITO
-    var showSuccessDialog by remember { mutableStateOf(false) }
+    // Estado para el Dropdown de Tipo
+    var expanded by remember { mutableStateOf(false) }
+    var selectedType by remember { mutableStateOf(ProductType.OTHER) }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(Res.string.add_prod_title)) },
-                navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.Filled.ArrowBack, null) } }
+                title = { Text("Nuevo Producto") },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Atrás")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.background
+                )
             )
         }
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            HuertaInput(name, { name = it }, stringResource(Res.string.add_prod_name), Icons.Filled.Label)
-            HuertaInput(stock, { stock = it }, stringResource(Res.string.add_prod_stock), Icons.Filled.Inventory)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(20.dp)
+                .background(MaterialTheme.colorScheme.background),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Text(
+                "Rellena los datos",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
 
+            // 1. NOMBRE
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Nombre del producto") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            // 2. TIPO (Dropdown)
             Box(modifier = Modifier.fillMaxWidth()) {
                 OutlinedTextField(
-                    value = selectedType.name, onValueChange = {}, readOnly = true,
-                    label = { Text(stringResource(Res.string.add_prod_type)) },
-                    leadingIcon = { Icon(Icons.Filled.Category, null) },
-                    modifier = Modifier.fillMaxWidth().clickable { expandedType = true },
-                    enabled = false,
-                    colors = OutlinedTextFieldDefaults.colors(disabledTextColor = MaterialTheme.colorScheme.onSurface, disabledBorderColor = MaterialTheme.colorScheme.outline, disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant, disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant, disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                    value = selectedType.name,
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Tipo") },
+                    trailingIcon = { Icon(Icons.Filled.ArrowDropDown, null) },
+                    modifier = Modifier.fillMaxWidth().clickable { expanded = true },
+                    enabled = false, // Deshabilitado para que el click lo capture el Box o usar readOnly
+                    colors = OutlinedTextFieldDefaults.colors(
+                        disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                        disabledBorderColor = MaterialTheme.colorScheme.outline,
+                        disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 )
-                Box(Modifier.matchParentSize().clickable { expandedType = true })
-                DropdownMenu(expanded = expandedType, onDismissRequest = { expandedType = false }) {
+                // Overlay transparente para capturar el click
+                Box(modifier = Modifier.matchParentSize().clickable { expanded = true })
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
                     ProductType.entries.forEach { type ->
-                        DropdownMenuItem(text = { Text(type.name) }, onClick = { selectedType = type; expandedType = false })
+                        DropdownMenuItem(
+                            text = { Text(type.name) },
+                            onClick = {
+                                selectedType = type
+                                expanded = false
+                            }
+                        )
                     }
                 }
             }
-            Spacer(Modifier.weight(1f))
-            Button(
-                onClick = { showSuccessDialog = true }, // MOSTRAR ALERTA AL GUARDAR
-                modifier = Modifier.fillMaxWidth().height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
-            ) { Text(stringResource(Res.string.add_prod_btn)) }
-        }
-    }
 
-    if (showSuccessDialog) {
-        AlertDialog(
-            onDismissRequest = { /* Bloqueo */ },
-            title = { Text(stringResource(Res.string.dialog_success_title)) },
-            text = { Text(stringResource(Res.string.dialog_success_product_saved)) },
-            confirmButton = {
-                Button(onClick = { showSuccessDialog = false; navController.popBackStack() }, colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) { Text(stringResource(Res.string.dialog_btn_ok)) }
+            // 3. CANTIDAD
+            OutlinedTextField(
+                value = quantity,
+                onValueChange = { quantity = it },
+                label = { Text("Cantidad (ej: 10 ud, 5 kg)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+
+            // 4. DESCRIPCIÓN
+            OutlinedTextField(
+                value = description,
+                onValueChange = { description = it },
+                label = { Text("Notas adicionales") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3
+            )
+
+            Spacer(Modifier.weight(1f))
+
+            // 5. BOTÓN GUARDAR
+            Button(
+                onClick = {
+                    if (name.isNotBlank() && quantity.isNotBlank()) {
+                        // Acción Real: Guardar en Firebase/Room
+                        viewModel.addProduct(name, selectedType, quantity, description)
+                        navController.popBackStack() // Volver a la lista
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().height(50.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
+                enabled = name.isNotBlank() && quantity.isNotBlank() // Validación simple
+            ) {
+                Icon(Icons.Filled.Save, null)
+                Spacer(Modifier.width(8.dp))
+                Text("Guardar Producto")
             }
-        )
+        }
     }
 }
