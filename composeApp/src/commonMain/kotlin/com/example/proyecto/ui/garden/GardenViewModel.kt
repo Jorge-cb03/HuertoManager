@@ -13,7 +13,7 @@ class GardenViewModel(
     private val repository: HuertaRepository
 ) : ViewModel() {
 
-    // Esta lista se actualizará sola cuando cambie la base de datos
+    // 1. ESTADO: La UI observa esto.
     val jardineras: StateFlow<List<Jardinera>> = repository.jardineras
         .stateIn(
             scope = viewModelScope,
@@ -21,8 +21,15 @@ class GardenViewModel(
             initialValue = emptyList()
         )
 
+    init {
+        // ACTIVAMOS LA SINCRONIZACIÓN AL INICIAR
+        repository.startSync()
+    }
+
+    // He renombrado esta función para que coincida con tu GardenScreen
     fun crearJardineraTest() {
         viewModelScope.launch {
+            // Crea una con un nombre aleatorio para probar
             repository.crearJardinera("Jardinera ${(1..99).random()}")
         }
     }

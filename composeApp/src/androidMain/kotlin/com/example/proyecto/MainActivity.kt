@@ -14,7 +14,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        AppModule.initialize(DatabaseFactory(applicationContext))
+        // 1. Instanciamos la fábrica
+        val factory = DatabaseFactory(applicationContext)
+
+        // 2. Creamos y Construimos la base de datos (.create() devuelve el Builder, .build() la crea)
+        val database = factory.create().build()
+
+        // 3. Ahora sí, inicializamos el AppModule con la base de datos real
+        AppModule.initialize(database)
 
         setContent {
             App()
