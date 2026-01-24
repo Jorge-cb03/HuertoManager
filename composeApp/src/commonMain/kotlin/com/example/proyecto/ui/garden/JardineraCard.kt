@@ -2,6 +2,9 @@ package com.example.proyecto.ui.garden
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.material.icons.filled.Grass
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -10,32 +13,36 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.proyecto.domain.model.EstadoJardinera
+import com.example.proyecto.domain.model.Jardinera
 
 @Composable
 fun JardineraCard(
     jardinera: Jardinera,
     onClick: () -> Unit
 ) {
-    // Definimos el color según el estado
-    val cardColor = when (jardinera.estado) {
-        EstadoJardinera.VACIO -> MaterialTheme.colorScheme.surfaceVariant
-        EstadoJardinera.OCUPADO -> MaterialTheme.colorScheme.primaryContainer
-        EstadoJardinera.ENFERMO -> MaterialTheme.colorScheme.errorContainer
+    // 1. LÓGICA DE ESTADO (Calculada al vuelo)
+    // Contamos cuántas plantas hay en los bancales
+    val huecosOcupados = jardinera.bancales.count { it.planta != null }
+    val totalHuecos = jardinera.filas * jardinera.columnas
+    val estaVacia = huecosOcupados == 0
+
+    // 2. COLORES DINÁMICOS
+    val cardColor = if (estaVacia) {
+        MaterialTheme.colorScheme.surfaceVariant // Gris si está vacía
+    } else {
+        MaterialTheme.colorScheme.primaryContainer // Verde/Color primario si tiene vida
     }
 
-    // Definimos el color del texto secundario para que se lea bien
-    val contentColor = when (jardinera.estado) {
-        EstadoJardinera.OCUPADO -> MaterialTheme.colorScheme.onPrimaryContainer
-        EstadoJardinera.ENFERMO -> MaterialTheme.colorScheme.onErrorContainer
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    val contentColor = if (estaVacia) {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    } else {
+        MaterialTheme.colorScheme.onPrimaryContainer
     }
 
     Card(
         modifier = Modifier
             .padding(4.dp)
-            .aspectRatio(1f) // Cuadrada
+            .aspectRatio(1f) // Mantiene la forma cuadrada
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
             containerColor = cardColor,
@@ -46,37 +53,48 @@ fun JardineraCard(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp),
+                .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.SpaceBetween // Distribuye espacio
         ) {
-            // 1. Emoji (Icono)
-            Text(
-                text = jardinera.icon,
-                fontSize = 32.sp
+            // Icono decorativo (Diferente si está vacía o llena)
+            Icon(
+                imageVector = if (estaVacia) Icons.Default.Grass else Icons.Default.Eco,
+                contentDescription = null,
+                modifier = Modifier.size(32.dp),
+                tint = contentColor.copy(alpha = 0.8f)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                // Título: Nombre de la Jardinera
+                Text(
+                    text = jardinera.nombre,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
 
-            // 2. Título PRINCIPAL: El NOMBRE de la Jardinera (Ej: "Jardinera 1")
-            Text(
-                text = jardinera.nombre,
-                style = MaterialTheme.typography.titleMedium, // Más grande
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+                Spacer(modifier = Modifier.height(4.dp))
 
-            // 3. Subtítulo: El CULTIVO (Ej: "Tomates" o "Disponible")
-            Text(
-                text = jardinera.cultivo ?: "Disponible",
-                style = MaterialTheme.typography.bodySmall, // Más pequeño
-                textAlign = TextAlign.Center,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                color = contentColor.copy(alpha = 0.8f) // Un poco más suave
-            )
+                // Subtítulo: Resumen de ocupación (Ej: "3/8 Plantas")
+                Text(
+                    text = if (estaVacia) "Disponible" else "$huecosOcupados/$totalHuecos Cultivos",
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    color = contentColor.copy(alpha = 0.7f)
+                )
+
+                // Dimensión técnica (Ej: "2x4")
+                Text(
+                    text = "${jardinera.filas}x${jardinera.columnas} Grid",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = contentColor.copy(alpha = 0.5f)
+                )
+            }
         }
     }
 }

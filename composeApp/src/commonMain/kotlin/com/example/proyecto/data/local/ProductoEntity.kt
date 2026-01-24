@@ -7,7 +7,8 @@ import androidx.room.PrimaryKey
 data class ProductoEntity(
     @PrimaryKey val id: String,
     val nombre: String,
-    val tipo: String, // "TOOL", "SEED", "CHEMICAL", "OTHER"
+    val tipo: String,
     val cantidad: String,
-    val descripcion: String
+    val descripcion: String,
+    val icon: String // <--- NUEVO CAMPO
 )

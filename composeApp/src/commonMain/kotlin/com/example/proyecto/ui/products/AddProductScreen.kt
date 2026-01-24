@@ -9,22 +9,20 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.proyecto.di.AppModule
+import com.example.proyecto.domain.model.ProductType
 import com.example.proyecto.ui.theme.GreenPrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(
     navController: NavController,
-    // Inyectamos el mismo ViewModel que usa la lista
     viewModel: ProductsViewModel = viewModel { ProductsViewModel(AppModule.huertaRepository) }
 ) {
     // Estados del formulario
@@ -34,7 +32,10 @@ fun AddProductScreen(
 
     // Estado para el Dropdown de Tipo
     var expanded by remember { mutableStateOf(false) }
-    var selectedType by remember { mutableStateOf(ProductType.OTHER) }
+
+    // CORRECCIÓN AQUÍ: Tipo explícito <ProductType> y valor correcto
+    // Asegúrate de que 'ProductType.OTRO' existe en tu archivo Jardinera.kt o Enums.kt
+    var selectedType by remember { mutableStateOf<ProductType>(ProductType.OTRO) }
 
     Scaffold(
         topBar = {
@@ -84,7 +85,7 @@ fun AddProductScreen(
                     label = { Text("Tipo") },
                     trailingIcon = { Icon(Icons.Filled.ArrowDropDown, null) },
                     modifier = Modifier.fillMaxWidth().clickable { expanded = true },
-                    enabled = false, // Deshabilitado para que el click lo capture el Box o usar readOnly
+                    enabled = false,
                     colors = OutlinedTextFieldDefaults.colors(
                         disabledTextColor = MaterialTheme.colorScheme.onSurface,
                         disabledBorderColor = MaterialTheme.colorScheme.outline,
@@ -134,14 +135,13 @@ fun AddProductScreen(
             Button(
                 onClick = {
                     if (name.isNotBlank() && quantity.isNotBlank()) {
-                        // Acción Real: Guardar en Firebase/Room
                         viewModel.addProduct(name, selectedType, quantity, description)
-                        navController.popBackStack() // Volver a la lista
+                        navController.popBackStack()
                     }
                 },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
-                enabled = name.isNotBlank() && quantity.isNotBlank() // Validación simple
+                enabled = name.isNotBlank() && quantity.isNotBlank()
             ) {
                 Icon(Icons.Filled.Save, null)
                 Spacer(Modifier.width(8.dp))

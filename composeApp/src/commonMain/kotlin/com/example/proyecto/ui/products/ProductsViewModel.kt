@@ -3,6 +3,8 @@ package com.example.proyecto.ui.products
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto.data.repository.HuertaRepository
+import com.example.proyecto.domain.model.Producto // Usamos el nuevo modelo
+import com.example.proyecto.domain.model.ProductType
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
@@ -12,8 +14,8 @@ class ProductsViewModel(
     private val repository: HuertaRepository
 ) : ViewModel() {
 
-    // Lista reactiva real desde Room
-    val inventory: StateFlow<List<InventoryItem>> = repository.productos
+    // Ahora la lista es de 'Producto', y 'repository.productos' ya existe
+    val inventory: StateFlow<List<Producto>> = repository.productos
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     init {
@@ -26,7 +28,6 @@ class ProductsViewModel(
         }
     }
 
-    // Función para crear (la usaremos desde AddProductScreen más tarde)
     fun addProduct(name: String, type: ProductType, quantity: String, desc: String) {
         viewModelScope.launch {
             repository.crearProducto(name, type.name, quantity, desc)

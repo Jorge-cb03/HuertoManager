@@ -8,5 +8,6 @@ data class ProductoRemote(
     val nombre: String = "",
     val tipo: String = "OTHER",
     val cantidad: String = "",
-    val descripcion: String = ""
+    val descripcion: String = "",
+    val icon: String = "default" // <--- NUEVO CAMPO
 )

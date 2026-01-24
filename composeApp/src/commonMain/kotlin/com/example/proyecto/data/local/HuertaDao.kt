@@ -12,6 +12,10 @@ interface HuertaDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertJardinera(jardinera: JardineraEntity)
 
+    // ESTO ES LO QUE FALTABA
+    @Query("DELETE FROM jardineras WHERE id = :id")
+    suspend fun deleteJardinera(id: String)
+
     // --- BANCALES (GRID) ---
     @Query("SELECT * FROM bancales WHERE jardineraId = :jardineraId ORDER BY indice ASC")
     fun getBancales(jardineraId: String): Flow<List<BancalEntity>>

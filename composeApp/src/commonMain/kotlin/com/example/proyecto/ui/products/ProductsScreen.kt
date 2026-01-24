@@ -17,35 +17,22 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.proyecto.di.AppModule
+import com.example.proyecto.domain.model.Producto
+import com.example.proyecto.domain.model.ProductType
 import com.example.proyecto.ui.HuertaCard
 import com.example.proyecto.ui.navigation.AppScreens
 import com.example.proyecto.ui.theme.RedDanger
 import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 
-// Definimos los modelos aquí mismo para que coincidan con lo que espera el Repositorio
-enum class ProductType { TOOL, SEED, CHEMICAL, FERTILIZER, OTHER }
-
-data class InventoryItem(
-    val id: String,
-    val name: String,
-    val type: ProductType,
-    val quantity: String,
-    val description: String?
-)
-
 @Composable
 fun ProductsScreen(
     navController: NavController,
-    // Inyectamos el ViewModel conectado al Repositorio (Room + Firebase)
     viewModel: ProductsViewModel = viewModel { ProductsViewModel(AppModule.huertaRepository) }
 ) {
-    // 1. OBSERVAMOS LA LISTA REAL (Reactiva)
     val inventory by viewModel.inventory.collectAsState()
-
-    // Estados para el diálogo de borrado
     var showDeleteDialog by remember { mutableStateOf(false) }
-    var itemToDelete by remember { mutableStateOf<InventoryItem?>(null) }
+    var itemToDelete by remember { mutableStateOf<Producto?>(null) }
 
     Column(
         modifier = Modifier
@@ -61,7 +48,6 @@ fun ProductsScreen(
         )
         Spacer(Modifier.height(20.dp))
 
-        // Si la lista está vacía, mostramos un aviso
         if (inventory.isEmpty()) {
             Box(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
@@ -72,21 +58,15 @@ fun ProductsScreen(
         } else {
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                // Dejamos espacio abajo para el botón y el BottomBar
                 contentPadding = PaddingValues(bottom = 100.dp),
-                modifier = Modifier.weight(1f) // Ocupa el espacio restante
+                modifier = Modifier.weight(1f)
             ) {
                 items(inventory) { item ->
                     InventoryCard(
                         item = item,
-                        onClick = {
-                            navController.navigate(AppScreens.createProductDetailRoute(item.id))
-                        },
-                        onEdit = {
-                            navController.navigate(AppScreens.createProductDetailRoute(item.id))
-                        },
+                        onClick = { navController.navigate(AppScreens.createProductDetailRoute(item.id)) },
+                        onEdit = { navController.navigate(AppScreens.createProductDetailRoute(item.id)) },
                         onDelete = {
-                            // Guardamos el item y abrimos diálogo
                             itemToDelete = item
                             showDeleteDialog = true
                         }
@@ -95,7 +75,6 @@ fun ProductsScreen(
             }
         }
 
-        // BOTÓN DE AÑADIR (Siempre visible abajo)
         Button(
             onClick = { navController.navigate(AppScreens.AddProduct) },
             modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -110,16 +89,14 @@ fun ProductsScreen(
         }
     }
 
-    // --- DIÁLOGO DE CONFIRMACIÓN DE BORRADO ---
     if (showDeleteDialog && itemToDelete != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text(stringResource(Res.string.dialog_delete_slot_title)) },
-            text = { Text("¿Estás seguro de que quieres eliminar ${itemToDelete?.name} del inventario?") },
+            text = { Text("¿Estás seguro de que quieres eliminar ${itemToDelete?.nombre} del inventario?") },
             confirmButton = {
                 Button(
                     onClick = {
-                        // ACCIÓN REAL DE BORRAR (ViewModel -> Repo -> Firebase -> Room)
                         viewModel.deleteProduct(itemToDelete!!.id)
                         showDeleteDialog = false
                         itemToDelete = null
@@ -140,25 +117,30 @@ fun ProductsScreen(
 
 @Composable
 fun InventoryCard(
-    item: InventoryItem,
+    item: Producto,
     onClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    val icon = when (item.type) {
-        ProductType.TOOL -> Icons.Filled.Build
-        ProductType.SEED -> Icons.Filled.Grain
-        ProductType.CHEMICAL -> Icons.Filled.Science
-        ProductType.FERTILIZER -> Icons.Filled.Science
-        ProductType.OTHER -> Icons.Filled.Inventory2
+    val typeEnum = try {
+        ProductType.valueOf(item.tipo)
+    } catch (e: Exception) {
+        ProductType.OTRO
     }
 
-    val tagColor = when(item.type) {
-        ProductType.TOOL -> Color(0xFF90CAF9)
-        ProductType.SEED -> Color(0xFFA5D6A7)
-        ProductType.CHEMICAL -> Color(0xFFEF9A9A)
-        ProductType.FERTILIZER -> Color(0xFFFFCC80)
-        else -> Color.Gray
+    // CORREGIDO: Solo usamos los valores válidos de ProductType
+    val icon = when (typeEnum) {
+        ProductType.HERRAMIENTA -> Icons.Filled.Build
+        ProductType.SEMILLA -> Icons.Filled.Grain
+        ProductType.FERTILIZANTE -> Icons.Filled.Science
+        ProductType.OTRO -> Icons.Filled.Inventory2
+    }
+
+    val tagColor = when(typeEnum) {
+        ProductType.HERRAMIENTA -> Color(0xFF90CAF9)
+        ProductType.SEMILLA -> Color(0xFFA5D6A7)
+        ProductType.FERTILIZANTE -> Color(0xFFFFCC80)
+        ProductType.OTRO -> Color.Gray
     }
 
     var showMenu by remember { mutableStateOf(false) }
@@ -182,13 +164,13 @@ fun InventoryCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    item.name,
+                    item.nombre,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )
                 Text(
-                    item.description ?: "",
+                    item.descripcion,
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.secondary,
                     maxLines = 1
@@ -201,7 +183,7 @@ fun InventoryCard(
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(50)
                 ) {
                     Text(
-                        item.type.name,
+                        item.tipo,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
@@ -210,7 +192,7 @@ fun InventoryCard(
                 }
                 Spacer(Modifier.height(4.dp))
                 Text(
-                    item.quantity,
+                    item.cantidad,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
                 )

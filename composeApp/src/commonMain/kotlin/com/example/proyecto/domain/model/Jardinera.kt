@@ -64,3 +64,18 @@ data class Jardinera(
         return vecinos
     }
 }
+
+// --- NUEVO: MODELO DE PRODUCTO (INVENTARIO) ---
+data class Producto(
+    val id: String,
+    val nombre: String,
+    val tipo: String, // Ej: "SEMILLA", "HERRAMIENTA"
+    val cantidad: String,
+    val descripcion: String,
+    val icon: String = "default_product"
+)
+
+// Enum simple para la UI (opcional, úsalo si lo necesitas en la vista)
+enum class ProductType {
+    SEMILLA, FERTILIZANTE, HERRAMIENTA, OTRO
+}

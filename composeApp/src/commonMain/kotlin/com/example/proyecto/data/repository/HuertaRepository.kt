@@ -10,15 +10,24 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock // Importante
 
 class HuertaRepository(
     private val dao: HuertaDao
 ) {
     // ----------------------------------------------------------------
+    // 0. INICIALIZACIÓN (Activa el flujo de datos)
+    // ----------------------------------------------------------------
+    init {
+        println("📡 INICIANDO SINCRONIZACIÓN AUTOMÁTICA CON FIREBASE...")
+        startSync()
+    }
+
+    // ----------------------------------------------------------------
     // 1. LECTURA (Dominio)
     // ----------------------------------------------------------------
 
-    // JARDINERAS (Solo contenedores)
+    // JARDINERAS
     val jardineras = dao.getJardineras().map { entities ->
         entities.map { entity ->
             Jardinera(
@@ -31,9 +40,24 @@ class HuertaRepository(
         }
     }
 
+    // DIARIO GLOBAL
     val diarioGlobal = dao.getDiarioGlobal().map { mapDiario(it) }
 
-    // Obtener una Jardinera COMPLETA con sus Bancales (Para la pantalla GardenScreen)
+    // PRODUCTOS
+    val productos = dao.getProductos().map { entities ->
+        entities.map { entity ->
+            Producto(
+                id = entity.id,
+                nombre = entity.nombre,
+                tipo = entity.tipo,
+                cantidad = entity.cantidad,
+                descripcion = entity.descripcion,
+                icon = entity.icon
+            )
+        }
+    }
+
+    // Detalle de Jardinera con Bancales
     fun getJardineraConBancales(jardineraId: String) = dao.getBancales(jardineraId).map { bancalEntities ->
         bancalEntities.map { entity ->
             Bancal(
@@ -56,7 +80,7 @@ class HuertaRepository(
         }
     }
 
-    // DIARIO (Filtrado inteligente)
+    // Diario filtrado
     fun getDiarioPorJardinera(jardineraId: String) = dao.getDiarioPorJardinera(jardineraId).map { mapDiario(it) }
     fun getDiarioPorBancal(bancalId: String) = dao.getDiarioPorBancal(bancalId).map { mapDiario(it) }
 
@@ -76,7 +100,7 @@ class HuertaRepository(
     }
 
     // ----------------------------------------------------------------
-    // 2. SINCRONIZACIÓN (Motor)
+    // 2. SINCRONIZACIÓN
     // ----------------------------------------------------------------
     fun startSync() {
         CoroutineScope(Dispatchers.IO).launch {
@@ -91,7 +115,7 @@ class HuertaRepository(
                 } catch (e: Exception) { e.printStackTrace() }
             }
 
-            // B. Bancales (¡CRÍTICO!)
+            // B. Bancales
             launch {
                 try {
                     FirebaseClient.firestore.collection("bancales").snapshots.collect { qs ->
@@ -124,78 +148,121 @@ class HuertaRepository(
                     }
                 } catch (e: Exception) { e.printStackTrace() }
             }
+
+            // D. PRODUCTOS
+            launch {
+                try {
+                    FirebaseClient.firestore.collection("productos").snapshots.collect { qs ->
+                        qs.documents.map { it.data<ProductoRemote>() }.forEach { remote ->
+                            dao.insertProducto(ProductoEntity(
+                                id = remote.id,
+                                nombre = remote.nombre,
+                                tipo = remote.tipo,
+                                cantidad = remote.cantidad,
+                                descripcion = remote.descripcion,
+                                icon = remote.icon
+                            ))
+                        }
+                    }
+                } catch (e: Exception) { e.printStackTrace() }
+            }
         }
     }
 
     // ----------------------------------------------------------------
-    // 3. ESCRITURA (Acciones)
+    // 3. ACCIONES
     // ----------------------------------------------------------------
 
-    // Crear Jardinera (Inicializa los bancales vacíos en la nube)
     suspend fun crearJardinera(nombre: String, filas: Int = 2, columnas: Int = 4) {
         val jardineraId = generateId()
-
-        // 1. Guardar Jardinera
         val remoteJardinera = JardineraRemote(id = jardineraId, nombre = nombre, filas = filas, columnas = columnas)
         FirebaseClient.firestore.collection("jardineras").document(jardineraId).set(remoteJardinera)
 
-        // 2. Inicializar Bancales Vacíos
         val totalHuecos = filas * columnas
         for (i in 0 until totalHuecos) {
             val bancalId = generateId()
-            val remoteBancal = BancalRemote(
-                id = bancalId,
-                jardineraId = jardineraId,
-                indice = i,
-                estado = "VACIO"
-            )
+            val remoteBancal = BancalRemote(id = bancalId, jardineraId = jardineraId, indice = i, estado = "VACIO")
             FirebaseClient.firestore.collection("bancales").document(bancalId).set(remoteBancal)
         }
     }
 
-    // Registrar Evento en Diario (Y actualizar estado del bancal si procede)
     suspend fun registrarEvento(evento: EntradaDiario) {
-        // 1. Guardar en Diario Nube
         val remoteDiario = DiarioRemote(
-            id = evento.id,
-            jardineraId = evento.jardineraId,
-            bancalId = evento.bancalId,
-            fecha = evento.fecha,
-            tipo = evento.tipo.name,
-            titulo = evento.titulo,
-            descripcion = evento.descripcion,
-            fotoUrl = evento.fotoUrl
+            id = evento.id, jardineraId = evento.jardineraId, bancalId = evento.bancalId,
+            fecha = evento.fecha, tipo = evento.tipo.name, titulo = evento.titulo, descripcion = evento.descripcion, fotoUrl = evento.fotoUrl
         )
         FirebaseClient.firestore.collection("diario").document(evento.id).set(remoteDiario)
 
-        // 2. Repercusión en el Bancal (Automatización)
         if (evento.bancalId != null) {
-            // Ejemplo simple: Si es Riego, actualizamos fechaUltimoRiego en Firebase
             if (evento.tipo == TipoEvento.RIEGO) {
-                FirebaseClient.firestore.collection("bancales").document(evento.bancalId).update(
-                    "fechaUltimoRiego" to evento.fecha
-                )
+                FirebaseClient.firestore.collection("bancales").document(evento.bancalId).update("fechaUltimoRiego" to evento.fecha)
             }
-            // Si es Cosecha, vaciamos el bancal
             if (evento.tipo == TipoEvento.COSECHA) {
-                FirebaseClient.firestore.collection("bancales").document(evento.bancalId).update(
-                    "estado" to "VACIO",
-                    "plantaNombre" to null
-                )
+                FirebaseClient.firestore.collection("bancales").document(evento.bancalId).update("estado" to "VACIO", "plantaNombre" to null)
             }
         }
     }
 
     suspend fun borrarEntrada(id: String) {
         try {
-            // 1. Borrar de Firebase
             FirebaseClient.firestore.collection("diario").document(id).delete()
-            // 2. Borrar Local (Feedback instantáneo)
             dao.deleteEntrada(id)
-        } catch (e: Exception) {
-            println("Error borrando entrada: ${e.message}")
-        }
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    // --- ACCIONES DE PRODUCTOS ---
+    suspend fun crearProducto(nombre: String, tipo: String, cantidad: String, descripcion: String) {
+        val id = generateId()
+        val remote = ProductoRemote(id, nombre, tipo, cantidad, descripcion, "default")
+        FirebaseClient.firestore.collection("productos").document(id).set(remote)
+    }
+
+    suspend fun borrarProducto(id: String) {
+        try {
+            FirebaseClient.firestore.collection("productos").document(id).delete()
+            dao.deleteProducto(id)
+        } catch (e: Exception) { e.printStackTrace() }
     }
 
     fun generateId(): String = dev.gitlive.firebase.Firebase.firestore.collection("tmp").document.id
+
+    // --- ACCIONES JARDINERAS ---
+
+    suspend fun borrarJardinera(id: String) {
+        try {
+            FirebaseClient.firestore.collection("jardineras").document(id).delete()
+            dao.deleteJardinera(id)
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    // --- ACCIONES BANCALES ---
+
+    suspend fun sembrarBancal(bancalId: String, nombrePlanta: String, variedad: String) {
+        try {
+            val updates = mapOf(
+                "estado" to "OCUPADO",
+                "plantaNombre" to nombrePlanta,
+                "plantaVariedad" to variedad,
+                "plantaTipo" to "OTRO",
+                "fechaSiembra" to Clock.System.now().toEpochMilliseconds()
+            )
+            FirebaseClient.firestore.collection("bancales").document(bancalId).update(updates)
+        } catch (e: Exception) { e.printStackTrace() }
+    }
+
+    suspend fun limpiarBancal(bancalId: String) {
+        try {
+            val updates = mapOf(
+                "estado" to "VACIO",
+                "plantaNombre" to null,
+                "plantaVariedad" to null,
+                "fechaSiembra" to null
+            )
+            FirebaseClient.firestore.collection("bancales").document(bancalId).update(updates)
+            println("--- EXITO: BANCAL LIMPIADO ---")
+        } catch (e: Exception) {
+            println("!!! ERROR AL LIMPIAR: ${e.message}")
+            e.printStackTrace()
+        }
+    }
 }

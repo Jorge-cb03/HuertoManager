@@ -1,35 +1,53 @@
 package com.example.proyecto.ui.garden
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Eco
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto.data.repository.HuertaRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+// --- MOVEMOS LA CLASE AQUÍ PARA EVITAR ERRORES DE COMPILACIÓN CRUZADOS ---
+data class JardineraUi(
+    val id: String,
+    val nombre: String,
+    val descripcion: String,
+    val icon: ImageVector = Icons.Default.Eco,
+    val color: Color = Color(0xFF4CAF50)
+)
 
 class GardenViewModel(
     private val repository: HuertaRepository
 ) : ViewModel() {
 
-    // 1. ESTADO: La UI observa esto.
-    val jardineras: StateFlow<List<Jardinera>> = repository.jardineras
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    // Transformamos Dominio (Jardinera) -> UI (JardineraUi)
+    val jardinerasUi: StateFlow<List<JardineraUi>> = repository.jardineras
+        .map { listaDominio ->
+            listaDominio.map { jardinera ->
+                JardineraUi(
+                    id = jardinera.id,
+                    nombre = jardinera.nombre,
+                    descripcion = "${jardinera.filas}x${jardinera.columnas} • ${jardinera.bancales.size} huecos"
+                )
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    init {
-        // ACTIVAMOS LA SINCRONIZACIÓN AL INICIAR
-        repository.startSync()
+    fun crearJardinera(nombre: String, filas: Int, columnas: Int) {
+        viewModelScope.launch {
+            repository.crearJardinera(nombre, filas, columnas)
+        }
     }
 
-    // He renombrado esta función para que coincida con tu GardenScreen
-    fun crearJardineraTest() {
+    fun borrarJardinera(id: String) {
         viewModelScope.launch {
-            // Crea una con un nombre aleatorio para probar
-            repository.crearJardinera("Jardinera ${(1..99).random()}")
+            repository.borrarJardinera(id)
         }
     }
 }
