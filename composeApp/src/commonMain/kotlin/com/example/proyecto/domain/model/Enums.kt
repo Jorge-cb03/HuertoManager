@@ -1,19 +1,24 @@
 package com.example.proyecto.domain.model
 
-// Enum para el tipo de acción en el diario
-enum class TipoEntrada {
-    RIEGO,
-    FERTILIZANTE,
-    PODA,
-    TRASPLANTE,
-    COSECHA,
-    PLAGA,
-    OTRO
+enum class TipoCultivo {
+    HOJA, FRUTO, RAIZ, LEGUMBRE, AROMATICA, OTRO
 }
 
-// Enum para el estado de la jardinera (Lo usamos en HuertaRepository)
-enum class EstadoJardinera {
-    VACIO,
-    OCUPADO,
-    ENFERMO
+// El estado visual del hueco en la matriz
+enum class EstadoBancal {
+    VACIO,          // Hueco disponible (Tierra)
+    OCUPADO,        // Hay una planta viva
+    MUERTO          // Planta seca/enferma (necesita limpieza)
+}
+
+// Acciones que el usuario puede realizar
+enum class TipoEvento {
+    RIEGO,          // Sube humedad
+    FERTILIZANTE,   // Sube nutrientes
+    TRATAMIENTO,    // Cura plagas/enfermedades
+    PODA,           // Mantenimiento
+    SIEMBRA,        // Inicio de vida
+    COSECHA,        // Fin de vida exitoso
+    ELIMINAR,       // Fin de vida por error
+    NOTA            // Texto libre
 }

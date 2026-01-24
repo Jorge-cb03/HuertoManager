@@ -1,12 +1,13 @@
 package com.example.proyecto.domain.model
 
-import kotlinx.datetime.LocalDate
-
 data class EntradaDiario(
     val id: String,
-    val fecha: LocalDate,      // Fecha real (no String ni Long)
+    val jardineraId: String,
+    // LA CLAVE: Si tiene valor, la acción es ESPECÍFICA para ese hueco.
+    val bancalId: String? = null,
+    val fecha: Long,
+    val tipo: TipoEvento,
     val titulo: String,
     val descripcion: String,
-    val tipo: TipoEntrada,     // <--- IMPORTANTE: Usamos el Enum, no String
-    val fotoUrl: String? = null // Opcional, para cuando metamos fotos
+    val fotoUrl: String? = null
 )

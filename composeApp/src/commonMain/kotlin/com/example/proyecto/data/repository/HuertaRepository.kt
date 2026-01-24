@@ -7,7 +7,6 @@ import com.example.proyecto.data.remote.FirebaseClient
 import com.example.proyecto.data.remote.model.DiarioRemote // IMPORTANTE
 import com.example.proyecto.data.remote.model.JardineraRemote
 import com.example.proyecto.domain.model.EstadoJardinera
-import com.example.proyecto.domain.model.Jardinera
 import dev.gitlive.firebase.firestore.firestore // Asegúrate de este import
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

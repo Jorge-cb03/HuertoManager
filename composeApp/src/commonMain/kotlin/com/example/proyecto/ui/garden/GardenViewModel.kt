@@ -3,7 +3,6 @@ package com.example.proyecto.ui.garden
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto.data.repository.HuertaRepository
-import com.example.proyecto.domain.model.Jardinera
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn

@@ -12,7 +12,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.proyecto.domain.model.EstadoJardinera
-import com.example.proyecto.domain.model.Jardinera
 
 @Composable
 fun JardineraCard(
