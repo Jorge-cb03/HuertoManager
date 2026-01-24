@@ -14,7 +14,7 @@ import androidx.room.Index
             childColumns = ["jardineraId"],
             onDelete = ForeignKey.CASCADE
         ),
-        // Relación opcional con Bancal (Set Null para no borrar historial si cambia el bancal)
+        // Relación opcional con Bancal (SET_NULL para no borrar el historial si el bancal cambia)
         ForeignKey(
             entity = BancalEntity::class,
             parentColumns = ["id"],

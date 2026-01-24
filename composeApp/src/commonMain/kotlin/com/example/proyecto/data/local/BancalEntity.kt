@@ -12,7 +12,7 @@ import androidx.room.Index
             entity = JardineraEntity::class,
             parentColumns = ["id"],
             childColumns = ["jardineraId"],
-            onDelete = ForeignKey.CASCADE // Si borras jardinera, se borran sus huecos
+            onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [Index("jardineraId")]
@@ -20,7 +20,7 @@ import androidx.room.Index
 data class BancalEntity(
     @PrimaryKey val id: String,
     val jardineraId: String,
-    val indice: Int,         // Posición lineal (0..7)
+    val indice: Int,         // Posición lineal (0, 1, 2...)
 
     // Estado del Hueco
     val estado: String,      // "VACIO", "OCUPADO", "MUERTO"
