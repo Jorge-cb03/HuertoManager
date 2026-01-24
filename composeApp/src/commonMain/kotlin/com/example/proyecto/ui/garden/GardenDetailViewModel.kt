@@ -2,11 +2,13 @@ package com.example.proyecto.ui.garden
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.proyecto.data.local.DiarioEntity
 import com.example.proyecto.data.repository.HuertaRepository
+import com.example.proyecto.domain.model.EntradaDiario // Usamos el modelo de Dominio
+import com.example.proyecto.domain.model.Jardinera     // <--- EL IMPORT QUE FALTABA
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 
 class GardenDetailViewModel(
@@ -14,14 +16,14 @@ class GardenDetailViewModel(
     private val jardineraId: String
 ) : ViewModel() {
 
-    // Combinamos la lista global para encontrar LA jardinera actual
+    // 1. Buscamos la jardinera actual en la lista global del repositorio
     val jardinera: StateFlow<Jardinera?> = repository.jardineras
-        .combine(kotlinx.coroutines.flow.flowOf(jardineraId)) { lista, id ->
+        .combine(flowOf(jardineraId)) { lista, id ->
             lista.find { it.id == id }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    // Obtenemos el diario específico de esta planta
-    val diario: StateFlow<List<DiarioEntity>> = repository.getDiario(jardineraId)
+    // 2. Obtenemos el diario filtrado (Usamos el método nuevo del Repo)
+    val diario: StateFlow<List<EntradaDiario>> = repository.getDiarioPorJardinera(jardineraId)
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 }

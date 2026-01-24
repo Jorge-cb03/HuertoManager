@@ -4,11 +4,12 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class DiarioRemote(
-    val id: String = "",
-    val jardineraId: String = "", // Para saber a qué planta pertenece
-    val fecha: Long = 0L,
-    val titulo: String = "",
-    val descripcion: String = "",
-    val tipo: String = "Riego", // "Riego", "Poda", "Abono", "Otros"
+    val id: String,
+    val jardineraId: String,
+    val bancalId: String? = null, // NULL = Global
+    val fecha: Long,
+    val tipo: String,             // "RIEGO", "PODA"...
+    val titulo: String,
+    val descripcion: String,
     val fotoUrl: String? = null
 )

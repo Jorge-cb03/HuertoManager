@@ -20,12 +20,12 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.proyecto.di.AppModule
+import com.example.proyecto.domain.model.Jardinera
 import com.example.proyecto.ui.navigation.AppScreens
 
 @Composable
 fun GardenScreen(
     navController: NavController,
-    // Inyectamos aquí el ViewModel específico del Jardín
     viewModel: GardenViewModel = viewModel { GardenViewModel(AppModule.huertaRepository) }
 ) {
     val jardineras by viewModel.jardineras.collectAsState()
@@ -66,18 +66,20 @@ fun GardenScreen(
                     Text("No hay jardineras activas", color = Color.Gray)
                 }
             } else {
-                // AQUÍ ESTÁ LA CLAVE: LazyVerticalGrid con datos reales
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(2), // 2 columnas como pide el PDF
+                    columns = GridCells.Fixed(2),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 100.dp)
                 ) {
                     items(jardineras) { jardinera ->
+                        // Asegúrate de tener JardineraCard también actualizado con el import correcto si falla allí
                         JardineraCard(
                             jardinera = jardinera,
                             onClick = {
-                                // Navegamos al detalle pasando el ID real
+                                // NOTA: Aquí deberíamos ir al detalle de la jardinera (Grid), no al slot directo.
+                                // Revisa tus rutas en AppNavigation si "createSlotDetailRoute" es lo correcto.
+                                // Por ahora lo dejo como lo tenías para arreglar el error de compilación.
                                 navController.navigate(AppScreens.createSlotDetailRoute(jardinera.id))
                             }
                         )
