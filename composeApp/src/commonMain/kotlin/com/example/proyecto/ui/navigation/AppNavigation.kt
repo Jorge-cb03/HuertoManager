@@ -58,7 +58,10 @@ object AppScreens {
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    isDarkTheme: Boolean,
+    onToggleTheme: (Boolean) -> Unit
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -160,7 +163,11 @@ fun AppNavigation() {
 
             // 11. PERFIL
             composable(AppScreens.Profile) {
-                ProfileScreen(navController = navController)
+                ProfileScreen(
+                    navController = navController,
+                    isDarkTheme = isDarkTheme,
+                    onToggleTheme = onToggleTheme
+                )
             }
 
             // 12. ACERCA DE

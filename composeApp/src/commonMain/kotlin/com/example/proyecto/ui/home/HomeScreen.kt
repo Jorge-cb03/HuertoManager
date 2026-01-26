@@ -30,11 +30,11 @@ import kotlinx.datetime.*
 import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 
-// Modelo para manejar alertas dinámicas
+// --- FIX 1: MODELO CON FECHA Y HORA ---
 data class AlertUiModel(
     val id: Long = Clock.System.now().toEpochMilliseconds(),
     var title: String,
-    var date: LocalDate,
+    var dateTime: LocalDateTime, // Usamos LocalDateTime para incluir la hora
     val isUrgent: Boolean
 )
 
@@ -46,15 +46,18 @@ fun HomeScreen(navController: NavController? = null) {
     var alertToDelete by remember { mutableStateOf<AlertUiModel?>(null) }
     var alertToEdit by remember { mutableStateOf<AlertUiModel?>(null) }
 
+    // Lista de alertas dinámica con datos de ejemplo usando hora
     val alerts = remember {
         mutableStateListOf(
-            AlertUiModel(1, "Riego Necesario", LocalDate(2026, 1, 25), true),
-            AlertUiModel(2, "Revisión Mensual", LocalDate(2026, 2, 1), false)
+            AlertUiModel(1, "Riego Necesario", LocalDateTime(2026, 1, 25, 10, 0), true),
+            AlertUiModel(2, "Revisión Mensual", LocalDateTime(2026, 2, 1, 9, 30), false)
         )
     }
 
-    // Ordenación por fecha más próxima
-    val sortedAlerts = alerts.sortedBy { it.date }
+    // --- FIX 2: ORDENACIÓN POR FECHA Y HORA EXACTA ---
+    // Esto asegura que las más próximas (incluso del mismo día) salgan primero
+    val sortedAlerts = alerts.sortedBy { it.dateTime }
+
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
 
     Column(
@@ -115,6 +118,7 @@ fun HomeScreen(navController: NavController? = null) {
         Spacer(Modifier.height(10.dp))
 
         // --- LISTADO DE ALERTAS ---
+        // Al usar sortedAlerts, si 'alerts' cambia, esto se redibuja automáticamente.
         sortedAlerts.forEach { alert ->
             AlertCardWithMenu(
                 alert = alert,
@@ -133,26 +137,36 @@ fun HomeScreen(navController: NavController? = null) {
         Spacer(Modifier.height(80.dp))
     }
 
-    // Diálogo de Añadir / Editar
+    // --- DIÁLOGO AÑADIR/EDITAR ---
     if (showAlertDialog) {
         AlertSchedulerDialog(
             initialName = alertToEdit?.title ?: "",
-            initialDate = alertToEdit?.date ?: today,
+            // Si editamos, usamos la fecha/hora existente, si no, ahora mismo
+            initialDate = alertToEdit?.dateTime?.date ?: today,
+            initialHour = alertToEdit?.dateTime?.hour ?: Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).hour,
+            initialMinute = alertToEdit?.dateTime?.minute ?: Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).minute,
             onDismiss = { showAlertDialog = false },
             onSave = { name, type, date, hour, minute ->
-                // Cálculo del momento exacto para la notificación
+
+                // --- FIX 3: CREAR LocalDateTime CON LA HORA ELEGIDA ---
                 val localDateTime = LocalDateTime(date.year, date.monthNumber, date.dayOfMonth, hour, minute)
                 val epochSeconds = localDateTime.toInstant(TimeZone.currentSystemDefault()).epochSeconds
 
                 if (alertToEdit != null) {
+                    // Editar existente
                     val index = alerts.indexOfFirst { it.id == alertToEdit!!.id }
                     if (index != -1) {
-                        alerts[index] = alerts[index].copy(title = name, date = date)
+                        // Actualizamos el modelo con la nueva fecha Y HORA
+                        alerts[index] = alerts[index].copy(title = name, dateTime = localDateTime)
                     }
                 } else {
-                    val newAlert = AlertUiModel(title = name, date = date, isUrgent = type.lowercase().contains("riego"))
+                    // Añadir nueva
+                    // FIX 4: Guardamos la alerta usando el nuevo modelo que incluye la hora
+                    val newAlert = AlertUiModel(title = name, dateTime = localDateTime, isUrgent = type.lowercase().contains("riego"))
+                    // Al añadir a la mutableStateList, la interfaz se actualizará sola
                     alerts.add(newAlert)
-                    // Programación real
+
+                    // Programación real de la notificación
                     NotificationManager.scheduleNotification(name, "Aviso: $type", epochSeconds)
                 }
                 showAlertDialog = false
@@ -187,6 +201,10 @@ fun HomeScreen(navController: NavController? = null) {
 fun AlertCardWithMenu(alert: AlertUiModel, onEdit: () -> Unit, onDelete: () -> Unit) {
     var expanded by remember { mutableStateOf(false) }
 
+    // Formateo simple de la hora para mostrar (ej: 09:05)
+    val hourFormatted = alert.dateTime.hour.toString().padStart(2, '0')
+    val minuteFormatted = alert.dateTime.minute.toString().padStart(2, '0')
+
     HuertaCard {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -201,7 +219,12 @@ fun AlertCardWithMenu(alert: AlertUiModel, onEdit: () -> Unit, onDelete: () -> U
                 )
                 Column(Modifier.padding(start = 16.dp)) {
                     Text(alert.title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-                    Text("${alert.date.dayOfMonth}/${alert.date.monthNumber}/${alert.date.year}", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
+                    // --- FIX 5: MOSTRAR FECHA Y HORA EN LA TARJETA ---
+                    Text(
+                        "${alert.dateTime.dayOfMonth}/${alert.dateTime.monthNumber} - $hourFormatted:$minuteFormatted",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.secondary
+                    )
                 }
             }
 
@@ -230,6 +253,8 @@ fun AlertCardWithMenu(alert: AlertUiModel, onEdit: () -> Unit, onDelete: () -> U
 fun AlertSchedulerDialog(
     initialName: String = "",
     initialDate: LocalDate,
+    initialHour: Int = 10, // Añadimos parámetros iniciales para la hora
+    initialMinute: Int = 0,
     onDismiss: () -> Unit,
     onSave: (String, String, LocalDate, Int, Int) -> Unit
 ) {
@@ -237,11 +262,10 @@ fun AlertSchedulerDialog(
     var type by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf(initialDate) }
 
-    // Estados de Hora
-    var hour by remember { mutableStateOf(10) }
-    var minute by remember { mutableStateOf(0) }
+    // Usamos los valores iniciales
+    var hour by remember { mutableStateOf(initialHour) }
+    var minute by remember { mutableStateOf(initialMinute) }
 
-    // Estados de Calendario
     var currentMonthDate by remember { mutableStateOf(LocalDate(selectedDate.year, selectedDate.monthNumber, 1)) }
 
     AlertDialog(
@@ -254,11 +278,18 @@ fun AlertSchedulerDialog(
                 HuertaInput(type, { type = it }, stringResource(Res.string.alert_type_hint), Icons.Filled.Category)
 
                 Spacer(Modifier.height(20.dp))
-                Text("Hora de notificación:", fontWeight = FontWeight.Bold)
+                Text(stringResource(Res.string.alert_dialog_title), fontWeight = FontWeight.Bold)
+                // Selector de Hora
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
                     IconButton(onClick = { if(hour > 0) hour-- }) { Icon(Icons.Filled.Remove, null) }
                     Text("${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}", fontSize = 28.sp, fontWeight = FontWeight.Bold)
                     IconButton(onClick = { if(hour < 23) hour++ }) { Icon(Icons.Filled.Add, null) }
+                }
+                // Selector de Minutos (Simplificado en pasos de 5 para el ejemplo)
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center, modifier = Modifier.fillMaxWidth()) {
+                    IconButton(onClick = { if(minute >= 5) minute -= 5 else minute = 55 }) { Icon(Icons.Filled.Remove, null) }
+                    Text("${minute.toString().padStart(2, '0')}", fontSize = 20.sp, color = MaterialTheme.colorScheme.secondary)
+                    IconButton(onClick = { if(minute <= 50) minute += 5 else minute = 0 }) { Icon(Icons.Filled.Add, null) }
                 }
 
                 Spacer(Modifier.height(20.dp))
@@ -280,7 +311,7 @@ fun AlertSchedulerDialog(
                     }
                 }
 
-                // Grid de días recuperado
+                // Grid de días
                 val daysInMonth = currentMonthDate.plus(1, DateTimeUnit.MONTH).minus(1, DateTimeUnit.DAY).dayOfMonth
                 val startDayOfWeek = currentMonthDate.dayOfWeek.ordinal
 

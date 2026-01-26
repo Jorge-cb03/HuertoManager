@@ -72,7 +72,7 @@ fun AddDiaryEntryScreen(navController: NavController, initialDateMillis: Long) {
             HuertaInput(description, { description = it }, stringResource(Res.string.add_diary_desc), Icons.Filled.Description)
 
             // CHIPS
-            Text("Tipo de Tarea", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text(stringResource(Res.string.diary_type), fontWeight = FontWeight.Bold, fontSize = 14.sp)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 taskTypes.forEach { type -> FilterChip(selected = (type == selectedType), onClick = { selectedType = type }, label = { Text(type) }, leadingIcon = if (type == selectedType) { { Icon(Icons.Filled.Check, null, modifier = Modifier.size(16.dp)) } } else null) }
             }

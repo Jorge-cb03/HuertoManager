@@ -41,6 +41,8 @@
     <string name="garden_menu_delete_content">Remove Plant</string>
     <string name="garden_menu_hide_slot">Remove Slot (Layout)</string>
     <string name="garden_restore_slot">Restore Slot</string>
+    <string name="garden_new">Add Planter</string>
+    <string name="garden_delete">Delete Planter</string>
     <string name="garden_rename_title">Rename Garden</string>
     <string name="garden_rename_label">New Name</string>
     <string name="garden_rename_save">Save</string>
@@ -66,16 +68,15 @@
     <string name="profile_name_label">FULL NAME</string>
     <string name="profile_email_label">EMAIL ADDRESS</string>
     <string name="profile_section_prefs">PREFERENCES</string>
-    <string name="pref_irrigation">Irrigation Notifications</string>
-    <string name="pref_weather">Weather Alerts</string>
-    <string name="pref_newsletter">Weekly Newsletter</string>
+    <string name="pref_color_D">Dark mode</string>
+    <string name="pref_color_C">Clear mode</string>
     <string name="profile_edit_title">Edit Profile</string>
     <string name="profile_edit_name_hint">New Name</string>
     <string name="profile_edit_save">Save Changes</string>
     <string name="profile_edit_cancel">Cancel</string>
     <string name="profile_change_photo">Change Photo</string>
 
-    <string name="tasks_for">Tasks for</string>
+    <string name="tasks_for">Tasks performed on</string>
     <string name="of">of</string>
     <string name="no_entries">No entries for this day.</string>
     <string name="diary_irrigation_title">Irrigation Today</string>
@@ -96,6 +97,7 @@
     <string name="diary_chip_other">Other</string>
     <string name="diary_slider_label">Water Amount (Liters)</string>
     <string name="diary_switch_urgent">Mark as Important</string>
+    <string name="diary_type">Type of task</string>
     <string name="diary_add_photo">Add Photo</string>
     <string name="diary_photo_placeholder">No image selected</string>
 
@@ -141,7 +143,12 @@
     <string name="menu_home">Home</string>
     <string name="menu_diary">Diary</string>
     <string name="menu_profile">Profile</string>
+    <string name="menu_delete_garden">Delete garden</string>
+    <string name="menu_add_garden">Add garden</string>
 
     <string name="type_fertilizer">Fertilizer</string>
+
+    <string name="alert_notification_time">Notification time:</string>
+
 
 </resources>

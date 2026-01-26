@@ -230,7 +230,7 @@ fun GardenScreen(navController: NavController) {
                         currentGardenIndex = gardens.size - 1
                         showAddGardenDialog = false
                         showSuccessDialog = "Jardinera creada correctamente" // Disparar alerta éxito
-                    }, colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) { Text("Crear") }
+                    }, colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) { Text(stringResource(Res.string.dialog_confirm)) }
                 },
                 dismissButton = { TextButton(onClick = { showAddGardenDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) } }
             )
