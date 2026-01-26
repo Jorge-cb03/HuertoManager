@@ -164,4 +164,9 @@
 
     <string name="alert_notification_time">Hora de notificación:</string>
 
+    <string name="alert_notification_prefix">Aviso:</string>
+    <string name="delete_confirm_alert">¿Estás seguro de que quieres eliminar </string>
+    <string name="delete_confirm_alert_I">de inventario?</string>
+    <string name="delete_confirm_diary">¿Deseas eliminar </string>
+
 </resources>

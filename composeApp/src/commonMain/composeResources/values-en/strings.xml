@@ -146,9 +146,19 @@
     <string name="menu_delete_garden">Delete garden</string>
     <string name="menu_add_garden">Add garden</string>
 
+    <string name="dialog_garden_add_title">New Planter</string>
+    <string name="dialog_garden_add_hint">Name of the planter</string>
+
+    <string name="dialog_garden_delete_title">Remove the planter?</string>
+    <string name="dialog_garden_delete_msg">All plants in this planter will be removed.</string>
+
     <string name="type_fertilizer">Fertilizer</string>
 
     <string name="alert_notification_time">Notification time:</string>
 
+    <string name="alert_notification_prefix">Alert:</string>
+    <string name="delete_confirm_alert">Are you sure you want to delete</string>
+    <string name="delete_confirm_alert_I">of inventory?</string>
+    <string name="delete_confirm_diary">Do you want to delete</string>
 
 </resources>

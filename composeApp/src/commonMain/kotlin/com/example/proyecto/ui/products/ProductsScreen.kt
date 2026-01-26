@@ -106,7 +106,7 @@ fun ProductsScreen(navController: NavController) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text(stringResource(Res.string.dialog_delete_slot_title)) }, // Reutilizamos título "¿Eliminar?"
-            text = { Text("¿Estás seguro de que quieres eliminar ${itemToDelete?.name} del inventario?") },
+            text = { Text(stringResource(Res.string.delete_confirm_alert) +" '${itemToDelete?.name}' "+stringResource(Res.string.delete_confirm_alert_I)) },
             confirmButton = {
                 Button(
                     onClick = {

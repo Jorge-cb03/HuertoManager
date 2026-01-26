@@ -201,7 +201,7 @@ fun DiaryScreen(navController: NavController) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text(stringResource(Res.string.menu_delete)) },
-            text = { Text("¿Deseas eliminar '${taskToDelete?.title}'?") },
+            text = { Text(stringResource(Res.string.delete_confirm_diary)+"'${taskToDelete?.title}'?") },
             confirmButton = {
                 Button(
                     onClick = {

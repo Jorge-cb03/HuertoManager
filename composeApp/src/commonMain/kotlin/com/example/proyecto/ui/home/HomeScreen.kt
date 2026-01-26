@@ -180,7 +180,7 @@ fun HomeScreen(navController: NavController? = null) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text(stringResource(Res.string.menu_delete)) },
-            text = { Text("¿Seguro que quieres borrar '${alertToDelete?.title}'?") },
+            text = { Text(stringResource(Res.string.menu_delete)+" '${alertToDelete?.title}'?") },
             confirmButton = {
                 Button(
                     onClick = {
