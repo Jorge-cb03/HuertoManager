@@ -34,6 +34,8 @@ fun AppTheme(
 ) {
     val colors = if (darkTheme) DarkScheme else LightScheme
 
+    SystemAppearance(isDark = darkTheme)
+
     MaterialTheme(
         colorScheme = colors,
         typography = Typography(), // Usa la por defecto por ahora

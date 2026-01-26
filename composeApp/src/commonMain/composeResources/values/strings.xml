@@ -41,6 +41,8 @@
     <string name="garden_menu_delete_content">Arrancar Planta</string>
     <string name="garden_menu_hide_slot">Quitar Hueco (Diseño)</string>
     <string name="garden_restore_slot">Restaurar Hueco</string>
+    <string name="garden_new">Añadir Jardinera</string>
+    <string name="garden_delete">Eliminar Jardinera</string>
     <string name="garden_rename_title">Renombrar Jardinera</string>
     <string name="garden_rename_label">Nuevo nombre</string>
     <string name="garden_rename_save">Guardar</string>
@@ -52,7 +54,7 @@
     <string name="product_stock_label">Stock:</string>
     <string name="type_tool">Herramienta</string>
     <string name="type_seed">Semilla</string>
-    <string name="type_chemical">Insumo</string>
+    <string name="type_chemical">Quimico</string>
     <string name="type_plant">Planta</string>
 
     <string name="add_prod_title">Nuevo Producto</string>
@@ -67,16 +69,15 @@
     <string name="profile_name_label">NOMBRE COMPLETO</string>
     <string name="profile_email_label">CORREO ELECTRÓNICO</string>
     <string name="profile_section_prefs">PREFERENCIAS</string>
-    <string name="pref_irrigation">Notificaciones de Riego</string>
-    <string name="pref_weather">Alertas de Clima</string>
-    <string name="pref_newsletter">Boletín Semanal</string>
+    <string name="pref_color_D">Modo ocuro</string>
+    <string name="pref_color_C">Modo claro</string>
     <string name="profile_edit_title">Editar Perfil</string>
     <string name="profile_edit_name_hint">Nuevo nombre</string>
     <string name="profile_edit_save">Guardar Cambios</string>
     <string name="profile_edit_cancel">Cancelar</string>
     <string name="profile_change_photo">Cambiar Foto</string>
 
-    <string name="tasks_for">Tareas para el</string>
+    <string name="tasks_for">Tareas realizadas el</string>
     <string name="of">de</string>
     <string name="no_entries">No hay entradas para este día.</string>
     <string name="diary_irrigation_title">Riego Hoy</string>
@@ -97,6 +98,7 @@
     <string name="diary_chip_other">Otro</string>
     <string name="diary_slider_label">Cantidad de Riego (Litros)</string>
     <string name="diary_switch_urgent">Marcar como Importante</string>
+    <string name="diary_type">Tipo de tarea</string>
     <string name="diary_add_photo">Añadir Foto</string>
     <string name="diary_photo_placeholder">Sin imagen seleccionada</string>
 
@@ -150,6 +152,22 @@
     <string name="dialog_success_garden_deleted">Jardinera eliminada.</string>
     <string name="dialog_success_product_saved">Producto guardado en el inventario.</string>
     <string name="dialog_success_diary_saved">Tarea guardada en el diario.</string>
+    <string name="dialog_success_garden">Jardinera creada correctamente</string>
     <string name="dialog_btn_ok">Aceptar</string>
+
+    <string name="menu_garden">Mi huerta</string>
+    <string name="menu_products">Productos</string>
+    <string name="menu_home">Inicio</string>
+    <string name="menu_diary">Diario</string>
+    <string name="menu_profile">Perfil</string>
+
+    <string name="type_fertilizer">Fertilizante</string>
+
+    <string name="alert_notification_time">Hora de notificación:</string>
+
+    <string name="alert_notification_prefix">Aviso:</string>
+    <string name="delete_confirm_alert">¿Estás seguro de que quieres eliminar </string>
+    <string name="delete_confirm_alert_I">de inventario?</string>
+    <string name="delete_confirm_diary">¿Deseas eliminar </string>
 
 </resources>

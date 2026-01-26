@@ -217,27 +217,50 @@ fun GardenScreen(navController: NavController) {
 
         // 1. AÑADIR JARDINERA
         if (showAddGardenDialog) {
+            // Extraemos los textos en el contexto Composable
+            val successMsg = stringResource(Res.string.dialog_success_garden_created)
+            val defaultNamePrefix = "Jardinera"
+
             AlertDialog(
                 onDismissRequest = { showAddGardenDialog = false },
                 title = { Text(stringResource(Res.string.dialog_garden_add_title)) },
-                text = { OutlinedTextField(value = tempName, onValueChange = { tempName = it }, label = { Text(stringResource(Res.string.dialog_garden_add_hint)) }, singleLine = true) },
+                text = {
+                    OutlinedTextField(
+                        value = tempName,
+                        onValueChange = { tempName = it },
+                        label = { Text(stringResource(Res.string.dialog_garden_add_hint)) },
+                        singleLine = true
+                    )
+                },
                 confirmButton = {
                     Button(onClick = {
                         val newId = (gardens.size + 1).toString()
-                        val finalName = if (tempName.isBlank()) "Jardinera $newId" else tempName
-                        val newPage = GardenPage(newId, finalName, 2, List(8) { idx -> GardenSlot("n${newId}_$idx", "${idx+1}", null, null, null) })
+                        val finalName = if (tempName.isBlank()) "$defaultNamePrefix $newId" else tempName
+                        val newPage = GardenPage(newId, finalName, 2, List(8) { idx ->
+                            GardenSlot("n${newId}_$idx", "${idx+1}", null, null, null)
+                        })
                         gardens = gardens + newPage
                         currentGardenIndex = gardens.size - 1
                         showAddGardenDialog = false
-                        showSuccessDialog = "Jardinera creada correctamente" // Disparar alerta éxito
-                    }, colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) { Text("Crear") }
+                        // Ahora usamos la variable local segura
+                        showSuccessDialog = successMsg
+                    }, colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) {
+                        Text(stringResource(Res.string.dialog_confirm))
+                    }
                 },
-                dismissButton = { TextButton(onClick = { showAddGardenDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) } }
+                dismissButton = {
+                    TextButton(onClick = { showAddGardenDialog = false }) {
+                        Text(stringResource(Res.string.dialog_cancel))
+                    }
+                }
             )
         }
 
-        // 2. BORRAR JARDINERA COMPLETA
+// 2. BORRAR JARDINERA COMPLETA
         if (showDeleteGardenDialog) {
+            // Obtenemos el mensaje de éxito del archivo de recursos
+            val deleteSuccessMsg = stringResource(Res.string.dialog_success_garden_deleted)
+
             AlertDialog(
                 onDismissRequest = { showDeleteGardenDialog = false },
                 title = { Text(stringResource(Res.string.dialog_garden_delete_title)) },
@@ -247,29 +270,52 @@ fun GardenScreen(navController: NavController) {
                         val newGardens = gardens.toMutableList().apply { removeAt(currentGardenIndex) }
                         gardens = newGardens
                         showDeleteGardenDialog = false
-                        showSuccessDialog = "Jardinera eliminada" // Disparar alerta éxito
-                    }, colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) { Text(stringResource(Res.string.dialog_confirm)) }
+                        showSuccessDialog = deleteSuccessMsg
+                    }, colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) {
+                        Text(stringResource(Res.string.dialog_confirm))
+                    }
                 },
-                dismissButton = { TextButton(onClick = { showDeleteGardenDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) } }
+                dismissButton = {
+                    TextButton(onClick = { showDeleteGardenDialog = false }) {
+                        Text(stringResource(Res.string.dialog_cancel))
+                    }
+                }
             )
         }
 
-        // 3. RENOMBRAR (DOBLE CLIC)
+// 3. RENOMBRAR (DOBLE CLIC)
         if (showRenameDialog) {
+            // Aunque no hay un string específico en tu XML para "Nombre actualizado",
+            // lo ideal es usar uno genérico de éxito o añadirlo a Res.string
+            val updateSuccessMsg = stringResource(Res.string.dialog_success_title)
+
             AlertDialog(
                 onDismissRequest = { showRenameDialog = false },
                 title = { Text(stringResource(Res.string.garden_rename_title)) },
-                text = { OutlinedTextField(value = tempName, onValueChange = { tempName = it }, label = { Text(stringResource(Res.string.garden_rename_label)) }, singleLine = true) },
+                text = {
+                    OutlinedTextField(
+                        value = tempName,
+                        onValueChange = { tempName = it },
+                        label = { Text(stringResource(Res.string.garden_rename_label)) },
+                        singleLine = true
+                    )
+                },
                 confirmButton = {
                     Button(onClick = {
                         if (tempName.isNotBlank()) {
                             updateGarden(gardens, currentGardenIndex) { it.copy(name = tempName) }.also { gardens = it }
-                            showSuccessDialog = "Nombre actualizado"
+                            showSuccessDialog = updateSuccessMsg
                         }
                         showRenameDialog = false
-                    }, colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) { Text(stringResource(Res.string.garden_rename_save)) }
+                    }, colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) {
+                        Text(stringResource(Res.string.garden_rename_save))
+                    }
                 },
-                dismissButton = { TextButton(onClick = { showRenameDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) } }
+                dismissButton = {
+                    TextButton(onClick = { showRenameDialog = false }) {
+                        Text(stringResource(Res.string.dialog_cancel))
+                    }
+                }
             )
         }
 

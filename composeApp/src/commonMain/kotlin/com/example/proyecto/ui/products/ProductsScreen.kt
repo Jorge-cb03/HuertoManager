@@ -22,7 +22,7 @@ import com.example.proyecto.ui.theme.RedDanger
 import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 
-enum class ProductType { TOOL, SEED, CHEMICAL, OTHER }
+enum class ProductType { TOOL, SEED, CHEMICAL, FERTILIZER, OTHER }
 
 data class InventoryItem(
     val id: String,
@@ -106,7 +106,7 @@ fun ProductsScreen(navController: NavController) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text(stringResource(Res.string.dialog_delete_slot_title)) }, // Reutilizamos título "¿Eliminar?"
-            text = { Text("¿Estás seguro de que quieres eliminar ${itemToDelete?.name} del inventario?") },
+            text = { Text(stringResource(Res.string.delete_confirm_alert) +" '${itemToDelete?.name}' "+stringResource(Res.string.delete_confirm_alert_I)) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -140,6 +140,7 @@ fun InventoryCard(
         ProductType.TOOL -> Icons.Filled.Build
         ProductType.SEED -> Icons.Filled.Grain
         ProductType.CHEMICAL -> Icons.Filled.Science
+        ProductType.FERTILIZER -> Icons.Filled.Science
         ProductType.OTHER -> Icons.Filled.Inventory2
     }
 

@@ -23,19 +23,30 @@ import com.example.proyecto.ui.HuertaCard
 import com.example.proyecto.ui.navigation.AppScreens
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
+import com.example.proyecto.util.MediaManager // IMPORTANTE
 import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 
 @Composable
-fun ProfileScreen(navController: NavController) {
+fun ProfileScreen(
+    navController: NavController,
+    isDarkTheme: Boolean,
+    onToggleTheme: (Boolean) -> Unit
+) {
     var userName by remember { mutableStateOf("Juan Pérez") }
     var userEmail by remember { mutableStateOf("juan@huerta.app") }
-    var notifRiego by remember { mutableStateOf(true) }
-    var notifClima by remember { mutableStateOf(false) }
 
     var showEditDialog by remember { mutableStateOf(false) }
-    var showLogoutDialog by remember { mutableStateOf(false) } // Estado nuevo
+    var showLogoutDialog by remember { mutableStateOf(false) }
     var tempName by remember { mutableStateOf("") }
+
+    // --- LÓGICA DE FOTO ---
+    var profilePhotoBytes by remember { mutableStateOf<ByteArray?>(null) }
+    var showPhotoOptions by remember { mutableStateOf(false) }
+    val launcher = MediaManager.rememberLauncher { bytes ->
+        if (bytes != null) profilePhotoBytes = bytes
+        showPhotoOptions = false
+    }
 
     Column(
         modifier = Modifier
@@ -47,15 +58,28 @@ fun ProfileScreen(navController: NavController) {
     ) {
         // Cabecera
         Box(contentAlignment = Alignment.BottomEnd) {
-            Box(Modifier.size(100.dp).clip(CircleShape).background(Color.Gray))
+            Box(
+                Modifier
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .background(if (profilePhotoBytes == null) Color.Gray else GreenPrimary)
+                    .clickable { showPhotoOptions = true }, // Abrir opciones al pulsar foto
+                contentAlignment = Alignment.Center
+            ) {
+                if (profilePhotoBytes == null) {
+                    Icon(Icons.Filled.Person, null, modifier = Modifier.size(60.dp), tint = Color.White)
+                } else {
+                    Icon(Icons.Filled.Check, null, modifier = Modifier.size(60.dp), tint = Color.White)
+                }
+            }
             IconButton(
-                onClick = { tempName = userName; showEditDialog = true },
-                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, CircleShape).size(30.dp)
-            ) { Icon(Icons.Filled.Edit, null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp)) }
+                onClick = { showPhotoOptions = true }, // Abrir opciones al pulsar editar
+                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, CircleShape).size(32.dp)
+            ) { Icon(Icons.Filled.CameraAlt, null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp)) }
         }
         Spacer(Modifier.height(10.dp))
         Text(userName, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-        Text("Agricultor Pro • Huerto Los Andes", color = GreenPrimary)
+        Text(stringResource(Res.string.home_role) + " • Huerto Los Andes", color = GreenPrimary)
 
         Spacer(Modifier.height(30.dp))
 
@@ -77,15 +101,10 @@ fun ProfileScreen(navController: NavController) {
         Spacer(Modifier.height(10.dp))
 
         HuertaCard {
-            SettingRow(Icons.Filled.WaterDrop, stringResource(Res.string.pref_irrigation), Color(0xFF4287f5), notifRiego) { notifRiego = it }
-            HorizontalDivider(Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
-            SettingRow(Icons.Filled.WbSunny, stringResource(Res.string.pref_weather), Color(0xFFf5a742), notifClima) { notifClima = it }
-            HorizontalDivider(Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
-            SettingRow(Icons.Filled.Email, stringResource(Res.string.pref_newsletter), GreenPrimary, true) {}
-
+            SettingRow(icon = if (isDarkTheme) Icons.Filled.DarkMode else Icons.Filled.LightMode, text = if (isDarkTheme) "Modo Oscuro" else "Modo Claro", iconColor = Color(0xFFf5a742), checked = isDarkTheme, onCheckedChange = { onToggleTheme(it) })
             HorizontalDivider(Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
             Row(modifier = Modifier.fillMaxWidth().clickable { navController.navigate(AppScreens.About) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                     Box(Modifier.size(36.dp).clip(CircleShape).background(Color.Gray.copy(0.2f)), contentAlignment = Alignment.Center) { Icon(Icons.Filled.Info, null, tint = Color.Gray, modifier = Modifier.size(20.dp)) }
                     Spacer(Modifier.width(12.dp))
                     Text(stringResource(Res.string.about_title), color = MaterialTheme.colorScheme.onBackground)
@@ -94,68 +113,58 @@ fun ProfileScreen(navController: NavController) {
             }
         }
 
-        Spacer(Modifier.height(30.dp))
+        Spacer(Modifier.height(40.dp))
 
-        // BOTÓN LOGOUT (NUEVO)
-        TextButton(
-            onClick = { showLogoutDialog = true },
-            colors = ButtonDefaults.textButtonColors(contentColor = RedDanger)
-        ) {
+        Button(onClick = { showLogoutDialog = true }, modifier = Modifier.fillMaxWidth().height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) {
             Icon(Icons.Filled.Logout, null)
             Spacer(Modifier.width(8.dp))
             Text(stringResource(Res.string.profile_logout))
         }
-
-        Spacer(Modifier.height(30.dp))
+        Spacer(Modifier.height(80.dp))
     }
 
-    // DIÁLOGO EDICIÓN
-    if (showEditDialog) {
+    // --- DIÁLOGO OPCIONES DE FOTO ---
+    if (showPhotoOptions) {
         AlertDialog(
-            onDismissRequest = { showEditDialog = false },
-            title = { Text(stringResource(Res.string.profile_edit_title)) },
+            onDismissRequest = { showPhotoOptions = false },
+            title = { Text(stringResource(Res.string.profile_change_photo)) },
             text = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.size(80.dp).clip(CircleShape).background(MaterialTheme.colorScheme.surfaceVariant)) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) { Icon(Icons.Filled.CameraAlt, null, tint = MaterialTheme.colorScheme.onSurfaceVariant); Text(stringResource(Res.string.profile_change_photo), fontSize = 8.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    }
-                    Spacer(Modifier.height(16.dp))
-                    OutlinedTextField(value = tempName, onValueChange = { tempName = it }, label = { Text(stringResource(Res.string.profile_edit_name_hint)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Column {
+                    ListItem(
+                        headlineContent = { Text("Cámara") },
+                        leadingContent = { Icon(Icons.Default.PhotoCamera, null) },
+                        modifier = Modifier.clickable { launcher.launchCamera() }
+                    )
+                    ListItem(
+                        headlineContent = { Text("Galería") },
+                        leadingContent = { Icon(Icons.Default.PhotoLibrary, null) },
+                        modifier = Modifier.clickable { launcher.launchGallery() }
+                    )
                 }
             },
-            confirmButton = { Button(onClick = { if (tempName.isNotBlank()) userName = tempName; showEditDialog = false }, colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) { Text(stringResource(Res.string.profile_edit_save)) } },
-            dismissButton = { TextButton(onClick = { showEditDialog = false }) { Text(stringResource(Res.string.profile_edit_cancel)) } }
+            confirmButton = {}
         )
     }
 
-    // DIÁLOGO LOGOUT (NUEVO)
+    // DIÁLOGO LOGOUT
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
             title = { Text(stringResource(Res.string.dialog_logout_title)) },
             text = { Text(stringResource(Res.string.dialog_logout_msg)) },
             confirmButton = {
-                Button(
-                    onClick = {
-                        showLogoutDialog = false
-                        // Navegar al Login y borrar historial
-                        navController.navigate(AppScreens.Login) {
-                            popUpTo(AppScreens.Home) { inclusive = true }
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = RedDanger)
-                ) { Text(stringResource(Res.string.dialog_confirm)) }
+                Button(onClick = { navController.navigate(AppScreens.Login) { popUpTo(AppScreens.Home) { inclusive = true } } }, colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) {
+                    Text(stringResource(Res.string.dialog_confirm))
+                }
             },
-            dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) }
-            }
+            dismissButton = { TextButton(onClick = { showLogoutDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) } }
         )
     }
 }
 
 @Composable
 fun SettingRow(icon: ImageVector, text: String, iconColor: Color, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(36.dp).clip(CircleShape).background(iconColor.copy(0.2f)), contentAlignment = Alignment.Center) { Icon(icon, null, tint = iconColor, modifier = Modifier.size(20.dp)) }
             Spacer(Modifier.width(12.dp))

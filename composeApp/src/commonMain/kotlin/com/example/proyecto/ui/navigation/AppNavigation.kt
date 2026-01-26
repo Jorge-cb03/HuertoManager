@@ -16,6 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.proyecto.ui.login.RegisterScreen
 
 // --- IMPORTS DE TODAS TUS PANTALLAS ---
 import com.example.proyecto.ui.components.BottomMenu
@@ -35,6 +36,7 @@ import com.example.proyecto.ui.alerts.AlertsScreen
 object AppScreens {
     // Rutas simples
     const val Login = "login"
+    const val Register = "register"
     const val Home = "home"
     const val Garden = "garden"
     const val Diary = "diary"
@@ -56,7 +58,10 @@ object AppScreens {
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    isDarkTheme: Boolean,
+    onToggleTheme: (Boolean) -> Unit
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -79,9 +84,24 @@ fun AppNavigation() {
         ) {
             // 1. LOGIN
             composable(AppScreens.Login) {
-                LoginScreen(onLoginSuccess = {
-                    navController.navigate(AppScreens.Home) { popUpTo(AppScreens.Login) { inclusive = true } }
-                })
+                LoginScreen(
+                    onLoginSuccess = {
+                        navController.navigate(AppScreens.Home) { popUpTo(AppScreens.Login) { inclusive = true } }
+                    },
+                    onNavigateToRegister = {
+                        navController.navigate(AppScreens.Register)
+                    }
+                )
+            }
+            composable(AppScreens.Register) {
+                RegisterScreen(
+                    onRegisterSuccess = {
+                        navController.navigate(AppScreens.Home) { popUpTo(AppScreens.Register) { inclusive = true } }
+                    },
+                    onBackToLogin = {
+                        navController.popBackStack()
+                    }
+                )
             }
 
             // 2. HOME
@@ -143,7 +163,11 @@ fun AppNavigation() {
 
             // 11. PERFIL
             composable(AppScreens.Profile) {
-                ProfileScreen(navController = navController)
+                ProfileScreen(
+                    navController = navController,
+                    isDarkTheme = isDarkTheme,
+                    onToggleTheme = onToggleTheme
+                )
             }
 
             // 12. ACERCA DE

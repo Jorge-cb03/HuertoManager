@@ -1,48 +1,50 @@
 <resources>
-    <string name="app_name">Huerta App</string>
+    <string name="app_name">Orchard App</string>
 
-    <string name="login_title">Huerta</string>
+    <string name="login_title">Orchard</string>
     <string name="login_subtitle">Professional Crop Management</string>
-    <string name="login_user_hint">User or Email</string>
+    <string name="login_user_hint">Username or Email</string>
     <string name="login_pass_hint">Password</string>
-    <string name="login_btn">Sign In</string>
-    <string name="login_forgot">Forgot Password?</string>
+    <string name="login_btn">Log In</string>
+    <string name="login_forgot">Forgot your password?</string>
     <string name="login_google">Continue with Google</string>
-    <string name="login_no_account">No account? Sign up</string>
+    <string name="login_no_account">Don\'t have an account? Sign up</string>
 
     <string name="home_greeting">Good morning,</string>
     <string name="home_role">Farmer</string>
     <string name="home_status_label">GENERAL STATUS</string>
-    <string name="home_health_title">Garden Health</string>
+    <string name="home_health_title">Orchard Health</string>
     <string name="home_alerts_title">Alerts</string>
     <string name="weather_humidity">Humidity</string>
     <string name="weather_temp">Temp</string>
     <string name="weather_uv">UV</string>
-    <string name="alert_irrigation_title">Irrigation Needed</string>
+    <string name="alert_irrigation_title">Irrigation Required</string>
     <string name="alert_irrigation_desc">Tomato Sector - Low humidity</string>
     <string name="alert_review_title">Monthly Review</string>
-    <string name="alert_review_desc">Whole garden - Tomorrow</string>
+    <string name="alert_review_desc">Full orchard - Tomorrow</string>
 
     <string name="alert_dialog_title">Schedule Alert</string>
-    <string name="alert_name_hint">Name (e.g. Watering)</string>
-    <string name="alert_type_hint">Type (e.g. Fertilizer)</string>
-    <string name="alert_date_label">Alert Date</string>
+    <string name="alert_name_hint">Name (e.g., Watering)</string>
+    <string name="alert_type_hint">Type (e.g., Fertilizer)</string>
+    <string name="alert_date_label">Alert date</string>
     <string name="alert_save">Save Alert</string>
     <string name="alert_cancel">Cancel</string>
 
     <string name="garden_empty">Empty</string>
-    <string name="garden_popup_title">What to plant?</string>
+    <string name="garden_popup_title">What do you want to plant?</string>
     <string name="garden_popup_cancel">Cancel</string>
     <string name="garden_menu_harvest">Harvest</string>
-    <string name="garden_menu_remove">Remove</string>
+    <string name="garden_menu_remove">Uproot</string>
     <string name="garden_days_planted">days planted</string>
     <string name="garden_columns">Columns</string>
     <string name="garden_add_row">Add Row</string>
     <string name="garden_menu_delete_content">Remove Plant</string>
     <string name="garden_menu_hide_slot">Remove Slot (Layout)</string>
     <string name="garden_restore_slot">Restore Slot</string>
-    <string name="garden_rename_title">Rename Garden</string>
-    <string name="garden_rename_label">New Name</string>
+    <string name="garden_new">Add Planter</string>
+    <string name="garden_delete">Delete Planter</string>
+    <string name="garden_rename_title">Rename Planter</string>
+    <string name="garden_rename_label">New name</string>
     <string name="garden_rename_save">Save</string>
 
     <string name="products_title">Inventory</string>
@@ -51,51 +53,51 @@
     <string name="product_stock_label">Stock:</string>
     <string name="type_tool">Tool</string>
     <string name="type_seed">Seed</string>
-    <string name="type_chemical">Supply</string>
+    <string name="type_chemical">Chemical</string>
     <string name="type_plant">Plant</string>
 
     <string name="add_prod_title">New Product</string>
-    <string name="add_prod_name">Product Name</string>
+    <string name="add_prod_name">Product name</string>
     <string name="add_prod_stock">Stock / Quantity</string>
-    <string name="add_prod_type">Product Type</string>
+    <string name="add_prod_type">Product type</string>
     <string name="add_prod_btn">Save to Inventory</string>
 
     <string name="profile_title">Profile</string>
-    <string name="profile_logout">Logout</string>
-    <string name="profile_section_personal">PERSONAL DETAILS</string>
+    <string name="profile_logout">Log out</string>
+    <string name="profile_section_personal">PERSONAL DATA</string>
     <string name="profile_name_label">FULL NAME</string>
     <string name="profile_email_label">EMAIL ADDRESS</string>
     <string name="profile_section_prefs">PREFERENCES</string>
-    <string name="pref_irrigation">Irrigation Notifications</string>
-    <string name="pref_weather">Weather Alerts</string>
-    <string name="pref_newsletter">Weekly Newsletter</string>
+    <string name="pref_color_D">Dark mode</string>
+    <string name="pref_color_C">Light mode</string>
     <string name="profile_edit_title">Edit Profile</string>
-    <string name="profile_edit_name_hint">New Name</string>
+    <string name="profile_edit_name_hint">New name</string>
     <string name="profile_edit_save">Save Changes</string>
     <string name="profile_edit_cancel">Cancel</string>
     <string name="profile_change_photo">Change Photo</string>
 
-    <string name="tasks_for">Tasks for</string>
+    <string name="tasks_for">Tasks performed on</string>
     <string name="of">of</string>
     <string name="no_entries">No entries for this day.</string>
     <string name="diary_irrigation_title">Irrigation Today</string>
-    <string name="diary_irrigation_desc">Automatic irrigation active.</string>
+    <string name="diary_irrigation_desc">Automatic irrigation activated.</string>
     <string name="diary_review_title">Review</string>
     <string name="diary_review_desc">General pest review.</string>
 
     <string name="add_diary_title">New Task</string>
-    <string name="add_diary_task">Task Title</string>
-    <string name="add_diary_desc">Short Description</string>
+    <string name="add_diary_task">Task title</string>
+    <string name="add_diary_desc">Brief description</string>
     <string name="add_diary_btn">Save to Diary</string>
-    <string name="diary_select_garden">Select Garden</string>
-    <string name="diary_date_label">Task Date</string>
-    <string name="diary_chip_irrigation">Watering</string>
+    <string name="diary_select_garden">Select Planter</string>
+    <string name="diary_date_label">Task date</string>
+    <string name="diary_chip_irrigation">Irrigation</string>
     <string name="diary_chip_pruning">Pruning</string>
     <string name="diary_chip_harvest">Harvest</string>
     <string name="diary_chip_fertilizer">Fertilizer</string>
     <string name="diary_chip_other">Other</string>
-    <string name="diary_slider_label">Water Amount (Liters)</string>
+    <string name="diary_slider_label">Irrigation Amount (Liters)</string>
     <string name="diary_switch_urgent">Mark as Important</string>
+    <string name="diary_type">Task type</string>
     <string name="diary_add_photo">Add Photo</string>
     <string name="diary_photo_placeholder">No image selected</string>
 
@@ -113,27 +115,58 @@
     <string name="month_12">December</string>
 
     <string name="about_title">About</string>
-    <string name="about_app_name">Huerta Manager</string>
+    <string name="about_app_name">Orchard Manager</string>
     <string name="about_version">Version 1.0.0</string>
-    <string name="about_description">App for comprehensive crop management, pest control, and task tracking in your urban garden.</string>
+    <string name="about_description">Application for the integral management of crops, pest control, and task tracking in your urban orchard.</string>
     <string name="about_team_title">Development Team</string>
     <string name="about_team_1">Jorge (Frontend &amp; UX)</string>
     <string name="about_team_2">Ismael (Backend &amp; QA)</string>
-    <string name="about_copyright">© 2026 Huerta Manager Project</string>
+    <string name="about_copyright">© 2026 Orchard Manager Project</string>
 
     <string name="dialog_confirm">Confirm</string>
     <string name="dialog_cancel">Cancel</string>
 
     <string name="dialog_harvest_title">Harvest plant?</string>
-    <string name="dialog_harvest_msg">The slot will be emptied. This action cannot be undone.</string>
+    <string name="dialog_harvest_msg">The slot will become empty. This action cannot be undone.</string>
 
-    <string name="dialog_delete_slot_title">Remove slot?</string>
-    <string name="dialog_delete_slot_msg">The slot will be hidden. You can restore it by tapping on the empty space.</string>
+    <string name="dialog_delete_slot_title">Delete slot?</string>
+    <string name="dialog_delete_slot_msg">The slot will disappear from the view. You can restore it by clicking on the empty space.</string>
 
-    <string name="dialog_logout_title">Logout</string>
-    <string name="dialog_logout_msg">Are you sure you want to log out?</string>
+    <string name="dialog_logout_title">Log Out</string>
+    <string name="dialog_logout_msg">Are you sure you want to log out of your account?</string>
 
     <string name="menu_edit">Edit</string>
     <string name="menu_delete">Delete</string>
+    <string name="menu_add_garden">Add Planter</string>
+    <string name="menu_delete_garden">Delete Planter</string>
+
+    <string name="dialog_garden_add_title">New Planter</string>
+    <string name="dialog_garden_add_hint">Planter name</string>
+
+    <string name="dialog_garden_delete_title">Delete Planter?</string>
+    <string name="dialog_garden_delete_msg">All plants in this planter will be deleted.</string>
+
+    <string name="dialog_success_title">Success</string>
+    <string name="dialog_success_garden_created">Planter created successfully.</string>
+    <string name="dialog_success_garden_deleted">Planter deleted.</string>
+    <string name="dialog_success_product_saved">Product saved to inventory.</string>
+    <string name="dialog_success_diary_saved">Task saved to diary.</string>
+    <string name="dialog_success_garden">Planter created successfully</string>
+    <string name="dialog_btn_ok">OK</string>
+
+    <string name="menu_garden">My Orchard</string>
+    <string name="menu_products">Products</string>
+    <string name="menu_home">Home</string>
+    <string name="menu_diary">Diary</string>
+    <string name="menu_profile">Profile</string>
+
+    <string name="type_fertilizer">Fertilizer</string>
+
+    <string name="alert_notification_time">Notification time:</string>
+
+    <string name="alert_notification_prefix">Notice:</string>
+    <string name="delete_confirm_alert">Are you sure you want to delete </string>
+    <string name="delete_confirm_alert_I">from inventory?</string>
+    <string name="delete_confirm_diary">Do you want to delete </string>
 
 </resources>

@@ -28,6 +28,7 @@ import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 import kotlinx.datetime.*
 
+// Mantenemos tu modelo de datos
 data class DiaryTask(
     val id: String,
     val title: String,
@@ -37,6 +38,7 @@ data class DiaryTask(
     val date: LocalDate
 )
 
+// Funciones de utilidad para el calendario
 fun getDaysInMonth(month: Int, year: Int): Int {
     val start = LocalDate(year, month, 1)
     val nextMonth = start.plus(1, DateTimeUnit.MONTH)
@@ -63,16 +65,18 @@ fun DiaryScreen(navController: NavController) {
     var currentYear by remember { mutableStateOf(today.year) }
     var currentMonth by remember { mutableStateOf(today.monthNumber) }
     var selectedDate by remember { mutableStateOf(today) }
+
     val daysInMonth = getDaysInMonth(currentMonth, currentYear)
     val firstDayOfWeek = getFirstDayOfWeek(currentMonth, currentYear)
 
+    // Textos para datos de ejemplo
     val irrigationTitle = stringResource(Res.string.diary_irrigation_title)
     val irrigationDesc = stringResource(Res.string.diary_irrigation_desc)
     val reviewTitle = stringResource(Res.string.diary_review_title)
     val reviewDesc = stringResource(Res.string.diary_review_desc)
 
-    // Usamos mutableStateOf para poder borrar elementos de la lista
-    var allTasks by remember(irrigationTitle, irrigationDesc, reviewTitle, reviewDesc, today) {
+    // Lista de tareas (Diario)
+    var allTasks by remember(irrigationTitle, irrigationDesc, reviewTitle, reviewDesc) {
         mutableStateOf(listOf(
             DiaryTask("1", irrigationTitle, "08:00 AM", irrigationDesc, "Invernadero", today),
             DiaryTask("2", "Poda Tomates", "08:30 AM", "Quitar chupones", "Invernadero", today),
@@ -81,10 +85,10 @@ fun DiaryScreen(navController: NavController) {
         ))
     }
 
-    // ESTADOS PARA BORRADO
     var showDeleteDialog by remember { mutableStateOf(false) }
     var taskToDelete by remember { mutableStateOf<DiaryTask?>(null) }
 
+    // --- FILTRADO POR DÍA SELECCIONADO Y AGRUPADO POR JARDINERA ---
     val tasksForDay = allTasks.filter { it.date == selectedDate }
     val groupedTasks = tasksForDay.groupBy { it.jardineraName }
 
@@ -93,6 +97,7 @@ fun DiaryScreen(navController: NavController) {
         floatingActionButton = {
             FloatingActionButton(
                 onClick = {
+                    // Navegamos al formulario pasando la fecha seleccionada
                     val dateMillis = selectedDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
                     navController.navigate(AppScreens.createAddDiaryRoute(dateMillis))
                 },
@@ -102,13 +107,21 @@ fun DiaryScreen(navController: NavController) {
         }
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp)) {
-            // HEADER CALENDARIO
-            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+
+            // --- HEADER CALENDARIO (MES EN ESPAÑOL) ---
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 IconButton(onClick = {
                     val newDate = LocalDate(currentYear, currentMonth, 1).minus(1, DateTimeUnit.MONTH)
                     currentMonth = newDate.monthNumber; currentYear = newDate.year
                 }) { Icon(Icons.Filled.ChevronLeft, null) }
+
+                // Uso de getMonthNameResource para asegurar español
                 Text("${getMonthNameResource(currentMonth)} $currentYear", fontSize = 20.sp, fontWeight = FontWeight.Bold)
+
                 IconButton(onClick = {
                     val newDate = LocalDate(currentYear, currentMonth, 1).plus(1, DateTimeUnit.MONTH)
                     currentMonth = newDate.monthNumber; currentYear = newDate.year
@@ -118,7 +131,7 @@ fun DiaryScreen(navController: NavController) {
             // GRID CALENDARIO
             LazyVerticalGrid(
                 columns = GridCells.Fixed(7),
-                modifier = Modifier.height(280.dp),
+                modifier = Modifier.height(260.dp), // Ajustado para evitar cortes
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(firstDayOfWeek) { Spacer(Modifier) }
@@ -140,10 +153,11 @@ fun DiaryScreen(navController: NavController) {
             }
 
             Spacer(Modifier.height(20.dp))
+            // Texto dinámico con la fecha
             Text("${stringResource(Res.string.tasks_for)} ${selectedDate.dayOfMonth} ${stringResource(Res.string.of)} ${getMonthNameResource(selectedDate.monthNumber)}", fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(10.dp))
 
-            // LISTA DE TAREAS
+            // --- LISTA DE TAREAS AGRUPADAS POR JARDINERA ---
             LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 if (groupedTasks.isEmpty()) {
                     item {
@@ -166,7 +180,6 @@ fun DiaryScreen(navController: NavController) {
                             DiaryEntryCard(
                                 task = task,
                                 onEdit = {
-                                    // Navegar a editar (reusamos AddDiary pasando fecha, en el futuro pasar ID)
                                     val dateMillis = task.date.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
                                     navController.navigate(AppScreens.createAddDiaryRoute(dateMillis))
                                 },
@@ -183,12 +196,12 @@ fun DiaryScreen(navController: NavController) {
         }
     }
 
-    // --- DIÁLOGO BORRADO DIARIO ---
+    // --- DIÁLOGO DE BORRADO ---
     if (showDeleteDialog && taskToDelete != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(Res.string.dialog_delete_slot_title)) },
-            text = { Text("¿Eliminar la tarea '${taskToDelete?.title}'?") },
+            title = { Text(stringResource(Res.string.menu_delete)) },
+            text = { Text(stringResource(Res.string.delete_confirm_diary)+"'${taskToDelete?.title}'?") },
             confirmButton = {
                 Button(
                     onClick = {
@@ -197,14 +210,10 @@ fun DiaryScreen(navController: NavController) {
                         taskToDelete = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = RedDanger)
-                ) {
-                    Text(stringResource(Res.string.dialog_confirm))
-                }
+                ) { Text(stringResource(Res.string.dialog_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text(stringResource(Res.string.dialog_cancel))
-                }
+                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) }
             }
         )
     }
@@ -217,9 +226,10 @@ fun DiaryEntryCard(task: DiaryTask, onEdit: () -> Unit, onDelete: () -> Unit) {
     HuertaCard {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column(Modifier.weight(1f)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                     Text(task.title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
 
+                    // --- MENÚ DE 3 PUNTOS FUNCIONAL ---
                     Box {
                         IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp)) {
                             Icon(Icons.Filled.MoreVert, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha=0.5f))
@@ -227,8 +237,7 @@ fun DiaryEntryCard(task: DiaryTask, onEdit: () -> Unit, onDelete: () -> Unit) {
 
                         DropdownMenu(
                             expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                            onDismissRequest = { showMenu = false }
                         ) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(Res.string.menu_edit)) },
@@ -244,9 +253,9 @@ fun DiaryEntryCard(task: DiaryTask, onEdit: () -> Unit, onDelete: () -> Unit) {
                     }
                 }
                 Text(task.time, fontSize = 12.sp, color = GreenPrimary)
+                Spacer(Modifier.height(5.dp))
+                Text(task.description, color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
             }
         }
-        Spacer(Modifier.height(5.dp))
-        Text(task.description, color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
     }
 }
