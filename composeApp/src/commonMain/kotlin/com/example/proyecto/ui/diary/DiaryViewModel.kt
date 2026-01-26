@@ -14,8 +14,6 @@ import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-// CLASE DiaryTask BORRADA AQUÍ (Ya está en DiaryScreen.kt)
-
 class DiaryViewModel(
     private val repository: HuertaRepository
 ) : ViewModel() {
@@ -25,16 +23,20 @@ class DiaryViewModel(
     }
 
     val tasks: StateFlow<List<DiaryTask>> = combine(
-        repository.diarioGlobal,
+        repository.getHistorial(),
         repository.jardineras
     ) { entradas: List<EntradaDiario>, jardineras: List<Jardinera> ->
         entradas.map { entrada ->
-            val nombreJardinera = jardineras.find { it.id == entrada.jardineraId }?.nombre ?: "Desconocida"
+            // Buscamos el nombre de la jardinera o ponemos "General" si es automático/manual
+            val nombreJardinera = if (entrada.jardineraId == "manual" || entrada.jardineraId == "auto") {
+                "General"
+            } else {
+                jardineras.find { it.id == entrada.jardineraId }?.nombre ?: "Desconocida"
+            }
 
             val instant = Instant.fromEpochMilliseconds(entrada.fecha)
             val localDateTime = instant.toLocalDateTime(TimeZone.currentSystemDefault())
 
-            // Usamos la clase DiaryTask definida en DiaryScreen.kt
             DiaryTask(
                 id = entrada.id,
                 title = entrada.titulo,

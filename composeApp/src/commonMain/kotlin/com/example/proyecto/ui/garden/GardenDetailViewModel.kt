@@ -3,14 +3,13 @@ package com.example.proyecto.ui.garden
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto.data.repository.HuertaRepository
+import com.example.proyecto.domain.model.Bancal
 import com.example.proyecto.domain.model.EntradaDiario
 import com.example.proyecto.domain.model.Jardinera
 import com.example.proyecto.domain.model.Producto
-import com.example.proyecto.domain.model.ProductType
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -20,28 +19,42 @@ class GardenDetailViewModel(
     private val jardineraId: String
 ) : ViewModel() {
 
-    // 1. OBTENEMOS LOS BANCALES REALES
-    private val _bancalesReales = repository.getJardineraConBancales(jardineraId)
+    // 1. OBTENEMOS LOS BANCALES REALES (Filtrando la lista global)
+    private val _bancalesReales = repository.bancalesGlobales.map { allBancales ->
+        allBancales
+            .filter { it.jardineraId == jardineraId }
+            .sortedBy { it.indice }
+    }
 
-    // 2. JARDINERA ACTUAL (Combinamos Info General + Bancales Reales)
+    // 2. JARDINERA ACTUAL
     val jardinera: StateFlow<Jardinera?> = repository.jardineras
-        .combine(_bancalesReales) { listaJardineras, listaBancales ->
+        .combine(_bancalesReales) { listaJardineras: List<Jardinera>, listaBancales: List<Bancal> ->
+
             val jardineraBase = listaJardineras.find { it.id == jardineraId }
-            jardineraBase?.copy(bancales = listaBancales)
+
+            if (jardineraBase != null) {
+                // CORRECCIÓN AQUÍ: Usamos 'bancales' en lugar de 'slots'
+                // Esto depende de cómo definiste 'data class Jardinera' en el paquete domain.model
+                jardineraBase.copy(bancales = listaBancales)
+            } else {
+                null
+            }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     // 3. DIARIO
-    val diario: StateFlow<List<EntradaDiario>> = repository.getDiarioPorJardinera(jardineraId)
+    val diario: StateFlow<List<EntradaDiario>> = repository.getHistorial()
+        .map { entradas ->
+            entradas.filter { it.jardineraId == jardineraId }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // 4. SEMILLAS DISPONIBLES
     val semillasDisponibles: StateFlow<List<Producto>> = repository.productos
         .map { todos ->
             todos.filter { prod ->
-                try {
-                    prod.tipo == ProductType.SEMILLA.name || prod.tipo.equals("SEED", ignoreCase = true)
-                } catch (e: Exception) { false }
+                prod.tipo.equals("SEMILLA", ignoreCase = true) ||
+                        prod.tipo.equals("SEED", ignoreCase = true)
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
@@ -51,7 +64,7 @@ class GardenDetailViewModel(
         if (bancalId == "dummy" || bancalId.isBlank()) return
 
         viewModelScope.launch {
-            repository.sembrarBancal(bancalId, semilla.nombre, "Variedad Estándar")
+            repository.sembrarBancal(bancalId, semilla)
         }
     }
 

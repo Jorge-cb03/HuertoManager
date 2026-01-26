@@ -1,14 +1,10 @@
 package com.example.proyecto.ui.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -17,7 +13,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 
-// --- IMPORTS DE TODAS TUS PANTALLAS ---
+// IMPORTS
 import com.example.proyecto.ui.components.BottomMenu
 import com.example.proyecto.ui.login.LoginScreen
 import com.example.proyecto.ui.home.HomeScreen
@@ -31,28 +27,32 @@ import com.example.proyecto.ui.diary.AddDiaryEntryScreen
 import com.example.proyecto.ui.profile.ProfileScreen
 import com.example.proyecto.ui.profile.AboutScreen
 import com.example.proyecto.ui.alerts.AlertsScreen
+import com.example.proyecto.ui.home.AddAlertScreen
 
 object AppScreens {
     // Rutas simples
     const val Login = "login"
     const val Home = "home"
-    const val Garden = "garden"
-    const val Diary = "diary"
+    const val Gardens = "gardens" // Ojo: "gardens" en plural para coincidir con BottomMenu
     const val Products = "products"
     const val Profile = "profile"
     const val Alerts = "alerts"
     const val About = "about"
     const val AddProduct = "add_product"
 
-    // Rutas con argumentos (Detalles y Formularios)
+    // RUTAS DEL DIARIO
+    const val Diary = "diary"
+    const val AddDiaryEntry = "add_diary_entry/{dateMillis}"
+
+    // FUNCIÓN QUE FALTABA
+    fun createAddDiaryRoute(dateMillis: Long) = "add_diary_entry/$dateMillis"
+
+    // Rutas con argumentos (Detalles)
     const val ProductDetail = "product_detail/{productId}"
     fun createProductDetailRoute(productId: String) = "product_detail/$productId"
 
     const val GardenSlotDetail = "garden_slot_detail/{slotName}"
     fun createSlotDetailRoute(slotName: String) = "garden_slot_detail/$slotName"
-
-    const val AddDiaryEntry = "add_diary_entry/{dateMillis}"
-    fun createAddDiaryRoute(dateMillis: Long) = "add_diary_entry/$dateMillis"
 }
 
 @Composable
@@ -91,11 +91,11 @@ fun AppNavigation() {
 
             // 3. AVISOS (ALERTS)
             composable(AppScreens.Alerts) {
-                AlertsScreen(navController = navController)
+                AlertsScreen(navController = navController) // Asegúrate de que AlertsScreen acepte navController si lo necesita
             }
 
             // 4. JARDINERA (GRID)
-            composable(AppScreens.Garden) {
+            composable(AppScreens.Gardens) {
                 GardenScreen(navController = navController)
             }
 
@@ -149,6 +149,12 @@ fun AppNavigation() {
             // 12. ACERCA DE
             composable(AppScreens.About) {
                 AboutScreen(navController = navController)
+            }
+
+            composable(route = AppScreens.AddDiaryEntry.route + "/{date}",arguments = ...) {
+                backStackEntry -> val date = backStackEntry.arguments?.getLong("date") ?: 0L;
+                // AQUI USAMOS LA NUEVA PANTALLA
+                AddAlertScreen(navController = navController, initialDateMillis = date)
             }
         }
     }

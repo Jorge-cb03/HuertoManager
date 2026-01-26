@@ -1,53 +1,78 @@
 package com.example.proyecto.ui.garden
 
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Eco
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.proyecto.data.repository.HuertaRepository
+import com.example.proyecto.domain.model.Bancal
+import com.example.proyecto.domain.model.Producto
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-// --- MOVEMOS LA CLASE AQUÍ PARA EVITAR ERRORES DE COMPILACIÓN CRUZADOS ---
-data class JardineraUi(
+data class GardenPageUi(
     val id: String,
-    val nombre: String,
-    val descripcion: String,
-    val icon: ImageVector = Icons.Default.Eco,
-    val color: Color = Color(0xFF4CAF50)
+    val name: String,
+    val columns: Int,
+    val slots: List<Bancal>
 )
 
 class GardenViewModel(
     private val repository: HuertaRepository
 ) : ViewModel() {
 
-    // Transformamos Dominio (Jardinera) -> UI (JardineraUi)
-    val jardinerasUi: StateFlow<List<JardineraUi>> = repository.jardineras
-        .map { listaDominio ->
-            listaDominio.map { jardinera ->
-                JardineraUi(
+    val gardenPages: StateFlow<List<GardenPageUi>> = repository.jardineras
+        .combine(repository.bancalesGlobales) { jardineras, todosLosBancales ->
+            jardineras.map { jardinera ->
+                val susBancales = todosLosBancales
+                    .filter { it.jardineraId == jardinera.id }
+                    .sortedBy { it.indice }
+
+                GardenPageUi(
                     id = jardinera.id,
-                    nombre = jardinera.nombre,
-                    descripcion = "${jardinera.filas}x${jardinera.columnas} • ${jardinera.bancales.size} huecos"
+                    name = jardinera.nombre,
+                    columns = jardinera.columnas,
+                    slots = susBancales
                 )
             }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun crearJardinera(nombre: String, filas: Int, columnas: Int) {
+    val semillasDisponibles: StateFlow<List<Producto>> = repository.productos
+        .map { productos ->
+            productos.filter {
+                (it.tipo.equals("SEMILLA", ignoreCase = true) || it.tipo.equals("SEED", ignoreCase = true)) &&
+                        (it.cantidad.toIntOrNull() ?: 0) > 0
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun crearJardinera(nombre: String, filas: Int = 4, columnas: Int = 2) {
+        if (nombre.isBlank()) return
+        viewModelScope.launch { repository.crearJardinera(nombre.trim(), filas, columnas) }
+    }
+
+    fun redimensionarJardinera(id: String, filasActuales: Int, columnas: Int, nuevasFilas: Int) {
         viewModelScope.launch {
-            repository.crearJardinera(nombre, filas, columnas)
+            repository.redimensionarJardinera(id, filasActuales, columnas, nuevasFilas)
         }
     }
 
     fun borrarJardinera(id: String) {
-        viewModelScope.launch {
-            repository.borrarJardinera(id)
-        }
+        viewModelScope.launch { repository.borrarJardinera(id) }
+    }
+
+    fun renombrarJardinera(id: String, nombre: String) {
+        viewModelScope.launch { repository.renombrarJardinera(id, nombre) }
+    }
+
+    fun sembrar(bancalId: String, producto: Producto) {
+        viewModelScope.launch { repository.sembrarBancal(bancalId, producto) }
+    }
+
+    fun cosechar(bancalId: String) {
+        viewModelScope.launch { repository.limpiarBancal(bancalId) }
     }
 }

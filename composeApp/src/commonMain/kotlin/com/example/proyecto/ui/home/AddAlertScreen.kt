@@ -1,4 +1,4 @@
-package com.example.proyecto.ui.diary
+package com.example.proyecto.ui.home
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -12,7 +12,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -22,43 +21,40 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.proyecto.di.AppModule
 import com.example.proyecto.domain.model.TipoEvento
-import com.example.proyecto.ui.theme.GreenPrimary
+import com.example.proyecto.ui.diary.AddDiaryViewModel
 import kotlinx.datetime.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddDiaryEntryScreen(
+fun AddAlertScreen(
     navController: NavController,
-    initialDateMillis: Long,
+    // Usamos el mismo ViewModel de guardado porque la lógica de BD es la misma,
+    // pero la UI es específica para Alertas
     viewModel: AddDiaryViewModel = viewModel { AddDiaryViewModel(AppModule.huertaRepository) }
 ) {
     val focusManager = LocalFocusManager.current
 
-    // Estado inicial
-    val initialInstant = try { Instant.fromEpochMilliseconds(initialDateMillis) } catch (e: Exception) { Clock.System.now() }
-    val initialDate = initialInstant.toLocalDateTime(TimeZone.currentSystemDefault()).date
-    val nowTime = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
+    // Configuración Inicial: Mañana a las 09:00 por defecto (Es una alerta futura)
+    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+    var selectedDate by remember { mutableStateOf(now.date) }
+    var selectedTime by remember { mutableStateOf(LocalTime(9, 0)) }
 
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedType by remember { mutableStateOf(TipoEvento.NOTA) }
 
-    // Fechas y Horas
-    var selectedDate by remember { mutableStateOf(initialDate) }
-    var selectedTime by remember { mutableStateOf(nowTime) }
-
-    // Control de Diálogos y Menú
+    // Control UI
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var expandedTypeMenu by remember { mutableStateOf(false) }
 
-    val datePickerState = rememberDatePickerState(initialSelectedDateMillis = initialDateMillis)
-    val timePickerState = rememberTimePickerState(initialHour = nowTime.hour, initialMinute = nowTime.minute, is24Hour = true)
+    val datePickerState = rememberDatePickerState()
+    val timePickerState = rememberTimePickerState(initialHour = 9, initialMinute = 0, is24Hour = true)
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Nueva Alerta / Entrada", fontWeight = FontWeight.Bold) },
+                title = { Text("Crear Recordatorio", fontWeight = FontWeight.Bold) },
                 navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.Filled.Close, null) } },
                 actions = {
                     Button(
@@ -70,13 +66,13 @@ fun AddDiaryEntryScreen(
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primaryContainer, contentColor = MaterialTheme.colorScheme.onPrimaryContainer),
                         enabled = title.isNotBlank()
                     ) {
-                        Text("Guardar", fontWeight = FontWeight.Bold)
+                        Text("Programar")
                     }
                 }
             )
         }
     ) { padding ->
-        // DETECTOR DE TOQUES PARA OCULTAR TECLADO
+        // Bloque para ocultar teclado al pulsar fuera
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -85,10 +81,9 @@ fun AddDiaryEntryScreen(
                     detectTapGestures(onTap = { focusManager.clearFocus() })
                 }
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp).fillMaxSize()
-            ) {
-                // 1. SELECTOR TIPO (DESPLEGABLE)
+            Column(modifier = Modifier.padding(20.dp).fillMaxSize()) {
+
+                // 1. SELECTOR DE TIPO (DESPLEGABLE)
                 ExposedDropdownMenuBox(
                     expanded = expandedTypeMenu,
                     onExpandedChange = { expandedTypeMenu = !expandedTypeMenu },
@@ -98,51 +93,33 @@ fun AddDiaryEntryScreen(
                         value = selectedType.name,
                         onValueChange = {},
                         readOnly = true,
-                        label = { Text("Tipo de Evento") },
+                        label = { Text("Tipo de Alerta") },
                         trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expandedTypeMenu) },
                         modifier = Modifier.menuAnchor().fillMaxWidth(),
-                        leadingIcon = {
-                            when(selectedType) {
-                                TipoEvento.RIEGO -> Icon(Icons.Filled.WaterDrop, null)
-                                TipoEvento.SIEMBRA -> Icon(Icons.Filled.Grass, null)
-                                TipoEvento.TRATAMIENTO -> Icon(Icons.Filled.MedicalServices, null)
-                                else -> Icon(Icons.Filled.Edit, null)
-                            }
-                        }
+                        leadingIcon = { Icon(Icons.Filled.Notifications, null) }
                     )
                     ExposedDropdownMenu(
                         expanded = expandedTypeMenu,
                         onDismissRequest = { expandedTypeMenu = false }
                     ) {
-                        TipoEvento.entries.forEach { tipo ->
-                            if (tipo != TipoEvento.ELIMINAR) {
-                                DropdownMenuItem(
-                                    text = { Text(tipo.name) },
-                                    onClick = {
-                                        selectedType = tipo
-                                        expandedTypeMenu = false
-                                    },
-                                    leadingIcon = {
-                                        when(tipo) {
-                                            TipoEvento.RIEGO -> Icon(Icons.Filled.WaterDrop, null)
-                                            TipoEvento.SIEMBRA -> Icon(Icons.Filled.Grass, null)
-                                            else -> Icon(Icons.Filled.Circle, null, modifier = Modifier.size(10.dp))
-                                        }
-                                    }
-                                )
-                            }
+                        // Filtramos tipos que tengan sentido para alertas
+                        listOf(TipoEvento.NOTA, TipoEvento.RIEGO, TipoEvento.TRATAMIENTO, TipoEvento.FERTILIZANTE).forEach { tipo ->
+                            DropdownMenuItem(
+                                text = { Text(tipo.name) },
+                                onClick = { selectedType = tipo; expandedTypeMenu = false }
+                            )
                         }
                     }
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(20.dp))
 
-                // 2. Selectores de Fecha y Hora
+                // 2. FECHA Y HORA (BOTONES)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     SelectorButton(
                         modifier = Modifier.weight(1f),
                         icon = Icons.Filled.CalendarToday,
-                        label = "Fecha",
+                        label = "Día",
                         value = "${selectedDate.dayOfMonth}/${selectedDate.monthNumber}",
                         onClick = { showDatePicker = true }
                     )
@@ -155,34 +132,30 @@ fun AddDiaryEntryScreen(
                     )
                 }
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(20.dp))
 
-                // 3. Título
+                // 3. CAMPOS DE TEXTO
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text("Título") },
-                    placeholder = { Text("Ej: Abonar tomates") },
+                    label = { Text("Título del recordatorio") },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
                     singleLine = true
                 )
 
                 Spacer(Modifier.height(16.dp))
 
-                // 4. Notas (Tamaño reducido)
                 OutlinedTextField(
                     value = description,
                     onValueChange = { description = it },
-                    label = { Text("Notas") },
-                    modifier = Modifier.fillMaxWidth().height(120.dp), // Altura fija reducida
-                    shape = RoundedCornerShape(12.dp),
-                    maxLines = 5
+                    label = { Text("Notas (Opcional)") },
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    maxLines = 3
                 )
             }
         }
 
-        // --- DIÁLOGOS ---
+        // DIALOGOS
         if (showDatePicker) {
             DatePickerDialog(
                 onDismissRequest = { showDatePicker = false },
@@ -216,10 +189,10 @@ fun AddDiaryEntryScreen(
 }
 
 @Composable
-fun SelectorButton(modifier: Modifier = Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String, onClick: () -> Unit) {
+fun SelectorButton(modifier: Modifier, icon: androidx.compose.ui.graphics.vector.ImageVector, label: String, value: String, onClick: () -> Unit) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             .clickable(onClick = onClick)
             .padding(12.dp)
@@ -229,7 +202,6 @@ fun SelectorButton(modifier: Modifier = Modifier, icon: androidx.compose.ui.grap
             Spacer(Modifier.width(8.dp))
             Text(label, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Spacer(Modifier.height(4.dp))
         Text(value, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
     }
 }

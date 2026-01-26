@@ -84,7 +84,7 @@ fun DiaryScreen(
 
     // 2. FILTRAMOS LAS TAREAS REALES POR FECHA
     //val tasksForDay = allTasks.filter { it.date == selectedDate }
-    // AHORA (Muestra TODO, ideal para probar)
+    // AHORA (Muestra TODO, ideal para probar, descomenta la línea anterior para filtrar por día)
     val tasksForDay = allTasks
     val groupedTasks = tasksForDay.groupBy { it.jardineraName }
 
@@ -133,7 +133,7 @@ fun DiaryScreen(
                     val isSelected = (dateOfCell == selectedDate)
                     val isToday = (dateOfCell == today)
 
-                    // Comprobamos si hay tareas ese día para poner un puntito (mejora visual)
+                    // Comprobamos si hay tareas ese día para poner un puntito
                     val hasTasks = allTasks.any { it.date == dateOfCell }
 
                     Box(
@@ -189,7 +189,6 @@ fun DiaryScreen(
                             DiaryEntryCard(
                                 task = task,
                                 onEdit = {
-                                    // Pasamos la fecha para editar (idealmente pasaríamos ID del task)
                                     val dateMillis = task.date.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
                                     navController.navigate(AppScreens.createAddDiaryRoute(dateMillis))
                                 },
@@ -215,7 +214,6 @@ fun DiaryScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        // 3. LLAMADA AL VIEWMODEL PARA BORRAR
                         viewModel.borrarTarea(taskToDelete!!.id)
                         showDeleteDialog = false
                         taskToDelete = null
@@ -234,7 +232,6 @@ fun DiaryScreen(
     }
 }
 
-// ... La función DiaryEntryCard se queda igual ...
 @Composable
 fun DiaryEntryCard(task: DiaryTask, onEdit: () -> Unit, onDelete: () -> Unit) {
     var showMenu by remember { mutableStateOf(false) }
