@@ -152,6 +152,7 @@
     <string name="dialog_success_garden_deleted">Jardinera eliminada.</string>
     <string name="dialog_success_product_saved">Producto guardado en el inventario.</string>
     <string name="dialog_success_diary_saved">Tarea guardada en el diario.</string>
+    <string name="dialog_success_garden">Jardinera creada correctamente</string>
     <string name="dialog_btn_ok">Aceptar</string>
 
     <string name="menu_garden">Mi huerta</string>

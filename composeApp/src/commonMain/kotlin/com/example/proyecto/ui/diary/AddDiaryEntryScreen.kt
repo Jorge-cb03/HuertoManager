@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.NavController
 import com.example.proyecto.ui.HuertaInput
 import com.example.proyecto.ui.theme.GreenPrimary
+import com.example.proyecto.util.MediaManager // IMPORTANTE: Para la funcionalidad de fotos
 import kotlinx.datetime.*
 import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
@@ -28,6 +29,14 @@ import proyecto.composeapp.generated.resources.*
 fun AddDiaryEntryScreen(navController: NavController, initialDateMillis: Long) {
     var title by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
+
+    // --- ESTADOS PARA LA FOTO ---
+    var diaryPhotoBytes by remember { mutableStateOf<ByteArray?>(null) }
+    var showPhotoOptions by remember { mutableStateOf(false) }
+    val launcher = MediaManager.rememberLauncher { bytes ->
+        if (bytes != null) diaryPhotoBytes = bytes
+        showPhotoOptions = false
+    }
 
     // ALERTA ÉXITO
     var showSuccessDialog by remember { mutableStateOf(false) }
@@ -84,8 +93,26 @@ fun AddDiaryEntryScreen(navController: NavController, initialDateMillis: Long) {
                 }
             }
 
-            Row(modifier = Modifier.fillMaxWidth().border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp)).padding(16.dp).clickable { }, verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-                Icon(Icons.Filled.CameraAlt, null, tint = MaterialTheme.colorScheme.secondary); Spacer(Modifier.width(8.dp)); Text(stringResource(Res.string.diary_add_photo), color = MaterialTheme.colorScheme.secondary)
+            // --- BOTÓN DE FOTO ACTUALIZADO ---
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, if (diaryPhotoBytes != null) GreenPrimary else MaterialTheme.colorScheme.outline, RoundedCornerShape(4.dp))
+                    .padding(16.dp)
+                    .clickable { showPhotoOptions = true }, // Abre el diálogo de opciones
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(
+                    if (diaryPhotoBytes != null) Icons.Filled.CheckCircle else Icons.Filled.CameraAlt,
+                    null,
+                    tint = if (diaryPhotoBytes != null) GreenPrimary else MaterialTheme.colorScheme.secondary
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    if (diaryPhotoBytes != null) "Foto añadida" else stringResource(Res.string.diary_add_photo),
+                    color = if (diaryPhotoBytes != null) GreenPrimary else MaterialTheme.colorScheme.secondary
+                )
             }
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -97,6 +124,31 @@ fun AddDiaryEntryScreen(navController: NavController, initialDateMillis: Long) {
                 Text(stringResource(Res.string.add_diary_btn))
             }
             Spacer(Modifier.height(40.dp))
+        }
+
+        // --- DIÁLOGO DE SELECCIÓN DE FOTO ---
+        if (showPhotoOptions) {
+            AlertDialog(
+                onDismissRequest = { showPhotoOptions = false },
+                title = { Text(stringResource(Res.string.profile_change_photo)) },
+                text = {
+                    Column {
+                        ListItem(
+                            headlineContent = { Text("Cámara") },
+                            leadingContent = { Icon(Icons.Default.PhotoCamera, null) },
+                            modifier = Modifier.clickable { launcher.launchCamera() }
+                        )
+                        ListItem(
+                            headlineContent = { Text("Galería") },
+                            leadingContent = { Icon(Icons.Default.PhotoLibrary, null) },
+                            modifier = Modifier.clickable { launcher.launchGallery() }
+                        )
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showPhotoOptions = false }) { Text(stringResource(Res.string.dialog_cancel)) }
+                }
+            )
         }
 
         if (showDatePicker) {
