@@ -2,147 +2,231 @@ package com.example.proyecto.ui.garden
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Agriculture
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.proyecto.ui.HuertaCard
+import com.example.proyecto.ui.diary.DiaryTask
+import com.example.proyecto.ui.theme.GreenPrimary
+import kotlinx.datetime.*
+import org.jetbrains.compose.resources.stringResource
+import proyecto.composeapp.generated.resources.*
 
-// Definimos colores específicos para esta pantalla si no están en el tema global
-val GreenPrimary = Color(0xFF5F9F70)
-val GreenSecondary = Color(0xFF4DB6AC)
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GardenSlotDetailScreen(
     navController: NavController,
-    slotName: String // Ej: "A1"
+    slotName: String
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .verticalScroll(rememberScrollState())
-    ) {
-        // --- CABECERA CON IMAGEN ---
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(250.dp)
-                .background(Color.DarkGray) // AQUÍ IRÍA TU FOTO REAL DEL CULTIVO
-        ) {
-            // Botón Atrás
-            IconButton(
-                onClick = { navController.popBackStack() },
-                modifier = Modifier.padding(top = 40.dp, start = 10.dp)
-            ) {
-                Icon(Icons.Filled.ArrowBack, null, tint = Color.White)
-            }
+    var showInfoPopup by remember { mutableStateOf(false) }
+    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
 
-            // Información sobre la imagen
-            Column(Modifier.align(Alignment.BottomStart).padding(20.dp)) {
-                Surface(
-                    color = Color.White.copy(alpha = 0.2f),
-                    shape = CircleShape
-                ) {
+    // Simulación de historial (Sincronizado con Diario)
+    val diaryHistory = remember {
+        mutableStateListOf(
+            DiaryTask("1", "Riego", "08:30 AM", "Riego manual", slotName, today.minus(1, DateTimeUnit.DAY)),
+            DiaryTask("2", "Abonado", "10:00 AM", "Abono orgánico", slotName, today.minus(3, DateTimeUnit.DAY))
+        )
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(slotName) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, null)
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(MaterialTheme.colorScheme.background)
+                .verticalScroll(rememberScrollState())
+        ) {
+            // --- NUEVO: SITIO PARA LA IMAGEN DE LA API ---
+            // Aquí es donde tu compañero pondrá la llamada a la API (usando Coil, Kamel, etc.)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .padding(16.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                contentAlignment = Alignment.Center
+            ) {
+                // Placeholder temporal hasta que conectéis la API
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        Icons.Default.Image,
+                        contentDescription = null,
+                        modifier = Modifier.size(48.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                    )
                     Text(
-                        text = "Posición $slotName - Cama Alta",
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                        color = Color.White,
-                        fontSize = 12.sp
+                        "Espacio para Imagen API",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                 }
-                Spacer(Modifier.height(5.dp))
-                Text(
-                    text = "Tomate Cherry", // Esto debería venir de tus datos
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-            }
-        }
-
-        // --- CONTENIDO PRINCIPAL ---
-        Column(Modifier.padding(20.dp)) {
-            // Estadísticas (Edad / Salud)
-            Row(horizontalArrangement = Arrangement.spacedBy(15.dp)) {
-                StatBox("EDAD", "45 Días", Modifier.weight(1f))
-                StatBox("SALUD", "Buena 🌿", Modifier.weight(1f), isGreen = true)
             }
 
-            Spacer(Modifier.height(30.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Historial del Diario",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onBackground
-                )
-                TextButton(onClick = { /* Ir a ver todo el diario */ }) {
-                    Text("Ver todo", color = GreenSecondary)
+            Column(modifier = Modifier.padding(horizontal = 20.dp)) {
+
+                // --- CABECERA (FOTO 1): NOMBRE E ICONO INFO ---
+                HuertaCard {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Tomates Cherry", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                                IconButton(onClick = { showInfoPopup = true }) {
+                                    Icon(Icons.Default.Info, "Info", tint = GreenPrimary, modifier = Modifier.size(24.dp))
+                                }
+                            }
+                            Text("Plantado en: $slotName", color = MaterialTheme.colorScheme.secondary)
+                        }
+                    }
                 }
-            }
-            Spacer(Modifier.height(10.dp))
 
-            // Timeline (Línea de tiempo)
-            TimelineItem(
-                icon = Icons.Filled.WaterDrop,
-                color = GreenSecondary,
-                title = "Regado",
-                time = "Hoy, 10:00 AM",
-                desc = "Riego por goteo activado 20 mins. Humedad óptima.",
-                showLine = true
-            )
-            TimelineItem(
-                icon = Icons.Filled.Agriculture,
-                color = GreenPrimary,
-                title = "Fertilizado",
-                time = "Ayer",
-                desc = "Aplicación de compost orgánico rico en nitrógeno.",
-                showLine = false
-            )
+                Spacer(Modifier.height(25.dp))
+
+                // --- ACCIONES RÁPIDAS (FOTO 2) ---
+                Text(
+                    stringResource(Res.string.quick_actions_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    val actions = listOf(
+                        Triple(stringResource(Res.string.action_water), Icons.Default.WaterDrop, "Riego"),
+                        Triple(stringResource(Res.string.action_prune), Icons.Default.ContentCut, "Poda"),
+                        Triple(stringResource(Res.string.action_pest), Icons.Default.BugReport, "Antiplaga"),
+                        Triple(stringResource(Res.string.action_fertilize), Icons.Default.Science, "Abonado")
+                    )
+
+                    actions.forEach { (label, icon, taskTitle) ->
+                        QuickActionItem(label, icon, Modifier.weight(1f)) {
+                            diaryHistory.add(0, DiaryTask("${Clock.System.now().toEpochMilliseconds()}", taskTitle, "Ahora", "Acción Rápida", slotName, today))
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(25.dp))
+
+                // --- HISTORIAL (FOTO 3): SINCRONIZADO ---
+                Text(
+                    stringResource(Res.string.history_care_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                    modifier = Modifier.padding(bottom = 15.dp)
+                )
+
+                diaryHistory.forEachIndexed { index, task ->
+                    TimelineItem(
+                        title = task.title,
+                        desc = task.description,
+                        time = if(task.date == today) "Hoy" else "${task.date.dayOfMonth}/${task.date.monthNumber}",
+                        icon = when(task.title) {
+                            "Riego" -> Icons.Default.WaterDrop
+                            "Poda" -> Icons.Default.ContentCut
+                            "Antiplaga" -> Icons.Default.BugReport
+                            "Abonado" -> Icons.Default.Science
+                            else -> Icons.Default.Agriculture
+                        },
+                        color = GreenPrimary,
+                        showLine = index != diaryHistory.size - 1
+                    )
+                }
+
+                Spacer(Modifier.height(30.dp))
+            }
         }
     }
-}
 
-// --- Componentes Auxiliares (Cajas de Stats y Timeline) ---
-@Composable
-fun StatBox(label: String, value: String, modifier: Modifier, isGreen: Boolean = false) {
-    HuertaCard(modifier = modifier) {
-        Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
-        Text(
-            text = value,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = if(isGreen) GreenSecondary else MaterialTheme.colorScheme.onBackground
+    // POPUP INFO TÉCNICA
+    if (showInfoPopup) {
+        AlertDialog(
+            onDismissRequest = { showInfoPopup = false },
+            title = { Text(stringResource(Res.string.plant_info_title)) },
+            text = {
+                Column {
+                    InfoRow(stringResource(Res.string.plant_info_fruit), "Tomate rojo pequeño y dulce.")
+                    InfoRow(stringResource(Res.string.plant_info_companions), "Albahaca, Caléndula, Zanahoria.")
+                    InfoRow(stringResource(Res.string.plant_info_antagonists), "Patatas, Hinojo.")
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showInfoPopup = false }) {
+                    Text(stringResource(Res.string.dialog_btn_ok))
+                }
+            }
         )
     }
 }
 
 @Composable
-fun TimelineItem(icon: ImageVector, color: Color, title: String, time: String, desc: String, showLine: Boolean) {
+fun QuickActionItem(label: String, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
+    Card(
+        modifier = modifier.clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(icon, null, tint = GreenPrimary, modifier = Modifier.size(28.dp))
+            Spacer(Modifier.height(6.dp))
+            Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        }
+    }
+}
+
+@Composable
+fun InfoRow(label: String, value: String) {
+    Column(Modifier.padding(vertical = 6.dp)) {
+        Text(label, fontWeight = FontWeight.Bold, color = GreenPrimary, fontSize = 14.sp)
+        Text(value, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+@Composable
+fun TimelineItem(title: String, desc: String, time: String, icon: ImageVector, color: Color, showLine: Boolean) {
     Row(Modifier.height(IntrinsicSize.Min)) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(40.dp)) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(42.dp)) {
             Box(
                 modifier = Modifier
-                    .size(30.dp)
+                    .size(32.dp)
                     .border(2.dp, color, CircleShape)
                     .background(MaterialTheme.colorScheme.background),
                 contentAlignment = Alignment.Center
@@ -158,18 +242,13 @@ fun TimelineItem(icon: ImageVector, color: Color, title: String, time: String, d
                 )
             }
         }
-        Spacer(Modifier.width(10.dp))
-        HuertaCard(modifier = Modifier.padding(bottom = 20.dp)) {
+        Spacer(Modifier.width(12.dp))
+        HuertaCard(modifier = Modifier.padding(bottom = 16.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
+                Text(title, fontWeight = FontWeight.Bold)
                 Text(time, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
             }
-            Spacer(Modifier.height(4.dp))
-            Text(
-                text = desc,
-                color = MaterialTheme.colorScheme.secondary,
-                fontSize = 14.sp
-            )
+            Text(text = desc, color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp)
         }
     }
 }

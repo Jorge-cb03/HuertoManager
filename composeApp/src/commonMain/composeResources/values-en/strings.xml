@@ -169,4 +169,30 @@
     <string name="delete_confirm_alert_I">from inventory?</string>
     <string name="delete_confirm_diary">Do you want to delete </string>
 
+    <string name="plant_info_title">Technical Sheet</string>
+    <string name="plant_info_fruit">Fruit produced:</string>
+    <string name="plant_info_companions">Companion plants:</string>
+    <string name="plant_info_antagonists">Avoid planting with:</string>
+    <string name="quick_actions_title">Quick Actions</string>
+    <string name="history_care_title">Care History</string>
+
+    <string name="action_water">Water</string>
+    <string name="action_prune">Prune</string>
+    <string name="action_pest">Pest Control</string>
+    <string name="action_fertilize">Fertilize</string>
+
+    <string name="alerts_screen_title">Upcoming Alerts</string>
+    <string name="add_alert_btn">Add Alert</string>
+
+    <string name="weather_title_now">Current Weather</string>
+    <string name="weather_sunny">Sunny</string>
+    <string name="weather_cloudy">Cloudy</string>
+    <string name="weather_rainy">Rainy</string>
+    <string name="weather_night">Clear Sky</string>
+
+    <string name="quick_access_title">My Gardens</string>
+    <string name="go_to_garden">Go to %s</string>
+
+    <string name="ai_chat_title">Crop Assistant</string>
+
 </resources>
