@@ -1,10 +1,12 @@
 package com.example.proyecto.ui.profile
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape // FIX: Importación añadida
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -20,10 +22,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.proyecto.ui.HuertaCard
+import com.example.proyecto.ui.HuertaInput
 import com.example.proyecto.ui.navigation.AppScreens
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
-import com.example.proyecto.util.MediaManager // IMPORTANTE
+import com.example.proyecto.util.MediaManager
 import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 
@@ -33,16 +36,16 @@ fun ProfileScreen(
     isDarkTheme: Boolean,
     onToggleTheme: (Boolean) -> Unit
 ) {
-    var userName by remember { mutableStateOf("Juan Pérez") }
-    var userEmail by remember { mutableStateOf("juan@huerta.app") }
+    var userName by remember { mutableStateOf("Jorge") }
+    var userEmail by remember { mutableStateOf("jorge@ejemplo.com") }
 
-    var showEditDialog by remember { mutableStateOf(false) }
-    var showLogoutDialog by remember { mutableStateOf(false) }
+    var showEditNameDialog by remember { mutableStateOf(false) }
     var tempName by remember { mutableStateOf("") }
 
-    // --- LÓGICA DE FOTO ---
     var profilePhotoBytes by remember { mutableStateOf<ByteArray?>(null) }
     var showPhotoOptions by remember { mutableStateOf(false) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
+
     val launcher = MediaManager.rememberLauncher { bytes ->
         if (bytes != null) profilePhotoBytes = bytes
         showPhotoOptions = false
@@ -52,108 +55,155 @@ fun ProfileScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .padding(20.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Cabecera
-        Box(contentAlignment = Alignment.BottomEnd) {
-            Box(
-                Modifier
-                    .size(100.dp)
-                    .clip(CircleShape)
-                    .background(if (profilePhotoBytes == null) Color.Gray else GreenPrimary)
-                    .clickable { showPhotoOptions = true }, // Abrir opciones al pulsar foto
-                contentAlignment = Alignment.Center
-            ) {
-                if (profilePhotoBytes == null) {
-                    Icon(Icons.Filled.Person, null, modifier = Modifier.size(60.dp), tint = Color.White)
-                } else {
-                    Icon(Icons.Filled.Check, null, modifier = Modifier.size(60.dp), tint = Color.White)
-                }
-            }
-            IconButton(
-                onClick = { showPhotoOptions = true }, // Abrir opciones al pulsar editar
-                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant, CircleShape).size(32.dp)
-            ) { Icon(Icons.Filled.CameraAlt, null, tint = MaterialTheme.colorScheme.onSurface, modifier = Modifier.size(16.dp)) }
-        }
-        Spacer(Modifier.height(10.dp))
-        Text(userName, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-        Text(stringResource(Res.string.home_role) + " • Huerto Los Andes", color = GreenPrimary)
+        Text(
+            text = stringResource(Res.string.profile_title),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.align(Alignment.Start)
+        )
 
         Spacer(Modifier.height(30.dp))
 
-        // Datos Personales
-        Text(stringResource(Res.string.profile_section_personal), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.align(Alignment.Start))
-        Spacer(Modifier.height(10.dp))
-        HuertaCard {
-            Text(stringResource(Res.string.profile_name_label), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
-            Text(userName, fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground)
-            HorizontalDivider(Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
-            Text(stringResource(Res.string.profile_email_label), fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
-            Text(userEmail, fontSize = 16.sp, color = MaterialTheme.colorScheme.onBackground)
+        Box(contentAlignment = Alignment.BottomEnd) {
+            Surface(
+                modifier = Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .clickable { showPhotoOptions = true },
+                color = MaterialTheme.colorScheme.surfaceVariant
+            ) {
+                Icon(Icons.Default.Person, null, modifier = Modifier.padding(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Surface(
+                shape = CircleShape,
+                color = GreenPrimary,
+                modifier = Modifier
+                    .size(36.dp)
+                    .border(2.dp, MaterialTheme.colorScheme.background, CircleShape)
+            ) {
+                IconButton(onClick = { showPhotoOptions = true }) {
+                    Icon(Icons.Default.CameraAlt, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                }
+            }
         }
 
         Spacer(Modifier.height(20.dp))
 
-        // Preferencias
-        Text(stringResource(Res.string.profile_section_prefs), fontSize = 12.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.secondary, modifier = Modifier.align(Alignment.Start))
-        Spacer(Modifier.height(10.dp))
-
-        HuertaCard {
-            SettingRow(icon = if (isDarkTheme) Icons.Filled.DarkMode else Icons.Filled.LightMode, text = if (isDarkTheme) "Modo Oscuro" else "Modo Claro", iconColor = Color(0xFFf5a742), checked = isDarkTheme, onCheckedChange = { onToggleTheme(it) })
-            HorizontalDivider(Modifier.padding(vertical = 10.dp), color = MaterialTheme.colorScheme.onSurface.copy(0.1f))
-            Row(modifier = Modifier.fillMaxWidth().clickable { navController.navigate(AppScreens.About) }.padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                    Box(Modifier.size(36.dp).clip(CircleShape).background(Color.Gray.copy(0.2f)), contentAlignment = Alignment.Center) { Icon(Icons.Filled.Info, null, tint = Color.Gray, modifier = Modifier.size(20.dp)) }
-                    Spacer(Modifier.width(12.dp))
-                    Text(stringResource(Res.string.about_title), color = MaterialTheme.colorScheme.onBackground)
-                }
-                Icon(Icons.Filled.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurface.copy(0.3f))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(userName, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            IconButton(onClick = {
+                tempName = userName
+                showEditNameDialog = true
+            }) {
+                Icon(Icons.Default.Edit, "Editar", tint = GreenPrimary, modifier = Modifier.size(20.dp))
             }
         }
+        Text(userEmail, color = MaterialTheme.colorScheme.secondary)
 
         Spacer(Modifier.height(40.dp))
 
-        Button(onClick = { showLogoutDialog = true }, modifier = Modifier.fillMaxWidth().height(50.dp), colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) {
-            Icon(Icons.Filled.Logout, null)
-            Spacer(Modifier.width(8.dp))
-            Text(stringResource(Res.string.profile_logout))
+        Text(
+            stringResource(Res.string.profile_section_prefs),
+            style = MaterialTheme.typography.labelLarge,
+            color = GreenPrimary,
+            modifier = Modifier.align(Alignment.Start)
+        )
+        Spacer(Modifier.height(10.dp))
+
+        HuertaCard {
+            SettingRow(
+                icon = if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode,
+                text = stringResource(if (isDarkTheme) Res.string.pref_color_D else Res.string.pref_color_C),
+                iconColor = if (isDarkTheme) Color(0xFFBB86FC) else Color(0xFFFFB300),
+                checked = isDarkTheme,
+                onCheckedChange = onToggleTheme
+            )
+            // FIX: Parámetro alpha eliminado y movido al color
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f)
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { navController.navigate(AppScreens.About) }
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Info, null, tint = MaterialTheme.colorScheme.secondary)
+                Spacer(Modifier.width(12.dp))
+                Text(stringResource(Res.string.about_title))
+            }
         }
-        Spacer(Modifier.height(80.dp))
+
+        Spacer(Modifier.height(30.dp))
+
+        Button(
+            onClick = { showLogoutDialog = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(50.dp),
+            colors = ButtonDefaults.buttonColors(
+                containerColor = RedDanger.copy(alpha = 0.1f),
+                contentColor = RedDanger
+            ),
+            shape = RoundedCornerShape(12.dp) // FIX: Ahora la referencia es válida
+        ) {
+            Icon(Icons.Default.Logout, null)
+            Spacer(Modifier.width(8.dp))
+            Text(stringResource(Res.string.profile_logout), fontWeight = FontWeight.Bold)
+        }
+
+        Spacer(Modifier.height(100.dp))
     }
 
-    // --- DIÁLOGO OPCIONES DE FOTO ---
+    // DIÁLOGOS...
+    if (showEditNameDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditNameDialog = false },
+            title = { Text(stringResource(Res.string.profile_edit_title)) },
+            text = {
+                HuertaInput(tempName, { tempName = it }, stringResource(Res.string.profile_edit_name_hint), Icons.Default.Person)
+            },
+            confirmButton = {
+                Button(onClick = { if(tempName.isNotBlank()) userName = tempName; showEditNameDialog = false }) {
+                    Text(stringResource(Res.string.profile_edit_save))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditNameDialog = false }) { Text(stringResource(Res.string.profile_edit_cancel)) }
+            }
+        )
+    }
+
     if (showPhotoOptions) {
         AlertDialog(
             onDismissRequest = { showPhotoOptions = false },
             title = { Text(stringResource(Res.string.profile_change_photo)) },
             text = {
                 Column {
-                    ListItem(
-                        headlineContent = { Text("Cámara") },
-                        leadingContent = { Icon(Icons.Default.PhotoCamera, null) },
-                        modifier = Modifier.clickable { launcher.launchCamera() }
-                    )
-                    ListItem(
-                        headlineContent = { Text("Galería") },
-                        leadingContent = { Icon(Icons.Default.PhotoLibrary, null) },
-                        modifier = Modifier.clickable { launcher.launchGallery() }
-                    )
+                    ListItem(headlineContent = { Text("Cámara") }, leadingContent = { Icon(Icons.Default.PhotoCamera, null) }, modifier = Modifier.clickable { launcher.launchCamera() })
+                    ListItem(headlineContent = { Text("Galería") }, leadingContent = { Icon(Icons.Default.PhotoLibrary, null) }, modifier = Modifier.clickable { launcher.launchGallery() })
                 }
             },
-            confirmButton = {}
+            confirmButton = { TextButton(onClick = { showPhotoOptions = false }) { Text(stringResource(Res.string.dialog_cancel)) } }
         )
     }
 
-    // DIÁLOGO LOGOUT
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
             title = { Text(stringResource(Res.string.dialog_logout_title)) },
             text = { Text(stringResource(Res.string.dialog_logout_msg)) },
             confirmButton = {
-                Button(onClick = { navController.navigate(AppScreens.Login) { popUpTo(AppScreens.Home) { inclusive = true } } }, colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) {
+                Button(onClick = {
+                    showLogoutDialog = false
+                    navController.navigate(AppScreens.Login) { popUpTo(AppScreens.Home) { inclusive = true } }
+                }, colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) {
                     Text(stringResource(Res.string.dialog_confirm))
                 }
             },
@@ -170,6 +220,6 @@ fun SettingRow(icon: ImageVector, text: String, iconColor: Color, checked: Boole
             Spacer(Modifier.width(12.dp))
             Text(text, color = MaterialTheme.colorScheme.onBackground)
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = GreenPrimary))
+        Switch(checked = checked, onCheckedChange = onCheckedChange, colors = SwitchDefaults.colors(checkedThumbColor = GreenPrimary, checkedTrackColor = GreenPrimary.copy(0.5f)))
     }
 }

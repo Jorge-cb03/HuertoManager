@@ -156,6 +156,46 @@ fun AppNavigation(
                 AddProductScreen(navController = navController)
             }
 
+            // COMPOSABLE DIARIO (MODO EDICIÓN)
+            composable(
+                route = AppScreens.AddDiaryEntry,
+                arguments = listOf(
+                    navArgument("dateMillis") { type = NavType.LongType },
+                    navArgument("taskId") { nullable = true; defaultValue = null },
+                    navArgument("title") { nullable = true; defaultValue = null },
+                    navArgument("desc") { nullable = true; defaultValue = null }
+                )
+            ) { backStackEntry ->
+                AddDiaryEntryScreen(
+                    navController = navController,
+                    initialDateMillis = backStackEntry.arguments?.getLong("dateMillis") ?: 0L,
+                    taskId = backStackEntry.arguments?.getString("taskId"),
+                    initialTitle = backStackEntry.arguments?.getString("title"),
+                    initialDesc = backStackEntry.arguments?.getString("desc")
+                )
+            }
+
+            composable(AppScreens.Products) { ProductsScreen(navController = navController) }
+
+            // COMPOSABLE PRODUCTOS (MODO EDICIÓN)
+            composable(
+                route = AppScreens.AddProduct,
+                arguments = listOf(
+                    navArgument("id") { nullable = true; defaultValue = null },
+                    navArgument("name") { nullable = true; defaultValue = null },
+                    navArgument("stock") { nullable = true; defaultValue = null },
+                    navArgument("type") { nullable = true; defaultValue = null }
+                )
+            ) { backStackEntry ->
+                AddProductScreen(
+                    navController = navController,
+                    productId = backStackEntry.arguments?.getString("id"),
+                    initialName = backStackEntry.arguments?.getString("name"),
+                    initialStock = backStackEntry.arguments?.getString("stock"),
+                    initialType = backStackEntry.arguments?.getString("type")
+                )
+            }
+
             // 11. DETALLE PRODUCTO
             composable(
                 route = AppScreens.ProductDetail,

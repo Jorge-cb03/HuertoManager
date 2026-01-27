@@ -210,4 +210,11 @@
     <string name="alert_menu_edit">Editar aviso</string>
     <string name="alert_menu_delete">Borrar aviso</string>
     <string name="alert_date_select">Seleccionar fecha</string>
+
+    <string name="section_basic_info">Información Básica</string>
+    <string name="add_prod_desc_hint">Descripción del producto</string>
+    <string name="section_where_when">¿Dónde y Cuándo?</string>
+    <string name="section_details">Detalles de la Tarea</string>
+    <string name="photo_attached_label">Foto Adjuntada</string>
+
 </resources>

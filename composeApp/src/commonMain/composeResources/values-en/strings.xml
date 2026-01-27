@@ -207,4 +207,10 @@
     <string name="alert_menu_delete">Delete alert</string>
     <string name="alert_date_select">Select date</string>
 
+    <string name="section_basic_info">Basic Information</string>
+    <string name="add_prod_desc_hint">Product description</string>
+    <string name="section_where_when">Where and When?</string>
+    <string name="section_details">Task Details</string>
+    <string name="photo_attached_label">Photo Attached</string>
+
 </resources>
