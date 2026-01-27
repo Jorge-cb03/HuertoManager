@@ -196,4 +196,18 @@
 
     <string name="ai_chat_title">Asistente de Cultivo</string>
 
+    <string name="tip_title">Consejo del Experto:</string>
+    <string name="tip_1">Limpia tus herramientas después de cada uso para evitar la propagación de hongos.</string>
+    <string name="tip_2">Guarda las semillas en un lugar fresco y seco para que no pierdan su capacidad de germinar.</string>
+    <string name="tip_3">Revisa periódicamente el envés de las hojas; es donde suelen esconderse las plagas.</string>
+
+    <string name="ai_chat_helper">Consultar a la IA</string>
+
+    <string name="home_search">Buscar planta o tarea...</string>
+
+
+    <string name="alert_description_hint">Descripción detallada</string>
+    <string name="alert_menu_edit">Editar aviso</string>
+    <string name="alert_menu_delete">Borrar aviso</string>
+    <string name="alert_date_select">Seleccionar fecha</string>
 </resources>

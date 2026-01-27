@@ -195,4 +195,16 @@
 
     <string name="ai_chat_title">Crop Assistant</string>
 
+    <string name="tip_title">Expert Tip:</string>
+    <string name="tip_1">Clean your tools after each use to prevent the spread of fungal diseases.</string>
+    <string name="tip_2">Store seeds in a cool, dry place so they don\'t lose their ability to germinate.</string>
+    <string name="tip_3">Periodically check the underside of leaves; that\'s where pests usually hide.</string>
+
+    <string name="ai_chat_helper">Ask the AI</string>
+
+    <string name="alert_description_hint">Detailed description</string>
+    <string name="alert_menu_edit">Edit alert</string>
+    <string name="alert_menu_delete">Delete alert</string>
+    <string name="alert_date_select">Select date</string>
+
 </resources>
