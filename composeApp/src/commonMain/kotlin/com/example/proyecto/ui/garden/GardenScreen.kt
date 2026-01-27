@@ -51,37 +51,32 @@ data class GardenPage(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun GardenScreen(navController: NavController) {
-    var currentGardenIndex by remember { mutableStateOf(0) }
+fun GardenScreen(navController: NavController, initialGardenIndex: Int = 0) {
+    var currentGardenIndex by remember { mutableStateOf(initialGardenIndex) }
     var showPlantSelector by remember { mutableStateOf(false) }
     var selectedSlotIdForPlanting by remember { mutableStateOf("") }
 
     // --- ESTADOS PARA DIÁLOGOS Y ALERTAS ---
     var showRenameDialog by remember { mutableStateOf(false) }
-    var showAddGardenDialog by remember { mutableStateOf(false) } // Nuevo: Añadir Jardinera
-    var showDeleteGardenDialog by remember { mutableStateOf(false) } // Nuevo: Borrar Jardinera
-    var showSuccessDialog by remember { mutableStateOf<String?>(null) } // Nuevo: Alerta Éxito genérica
+    var showAddGardenDialog by remember { mutableStateOf(false) }
+    var showDeleteGardenDialog by remember { mutableStateOf(false) }
+    var showSuccessDialog by remember { mutableStateOf<String?>(null) }
 
     var tempName by remember { mutableStateOf("") }
-
-    // Estados para menú superior
     var showGardenMenu by remember { mutableStateOf(false) }
-
-    // Estados para confirmación de acciones en huecos
     var actionToConfirm by remember { mutableStateOf<SlotAction?>(null) }
     var slotIdToConfirm by remember { mutableStateOf<String?>(null) }
 
     // --- DATOS INICIALES ---
     var gardens by remember {
-        mutableStateOf(
-            listOf(
-                GardenPage("1", "Invernadero", 2, List(8) { idx -> GardenSlot("s$idx", "${idx+1}", if(idx==0) "Tomates" else null, if(idx==0) "Sano" else null, if(idx==0) Icons.Filled.Eco else null) }),
-                GardenPage("2", "Terraza", 2, List(8) { idx -> GardenSlot("t$idx", "${idx+1}", null, null, null) })
-            )
-        )
+        mutableStateOf(listOf(
+            GardenPage("1", "Invernadero", 2, List(8) { idx -> GardenSlot("s$idx", "${idx+1}", null, null, null) }),
+            GardenPage("2", "Terraza", 2, List(8) { idx -> GardenSlot("t$idx", "${idx+1}", null, null, null) }),
+            GardenPage("3", "Cama Alta", 2, List(8) { idx -> GardenSlot("c$idx", "${idx+1}", null, null, null) })
+        ))
     }
 
-    // Asegurar índice válido tras borrar
+    // Asegurar índice válido tras borrar o navegar
     if (currentGardenIndex >= gardens.size && gardens.isNotEmpty()) {
         currentGardenIndex = gardens.size - 1
     }
@@ -95,12 +90,10 @@ fun GardenScreen(navController: NavController) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (currentGarden == null) {
-                // Caso borde: No hay jardineras
                 Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                     Button(onClick = { showAddGardenDialog = true }) { Text("Crear mi primera jardinera") }
                 }
             } else {
-                // CABECERA CON MENÚ DE 3 PUNTOS (NUEVO)
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -119,7 +112,6 @@ fun GardenScreen(navController: NavController) {
                         Text("${currentGarden.columns} ${stringResource(Res.string.garden_columns)}", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary)
                     }
 
-                    // MENÚ DESPLEGABLE (Sustituye al botón +)
                     Box {
                         IconButton(onClick = { showGardenMenu = true }) {
                             Icon(Icons.Filled.MoreVert, null)
@@ -145,7 +137,7 @@ fun GardenScreen(navController: NavController) {
 
                 Spacer(Modifier.height(16.dp))
 
-                // CONTROLES DE FILAS/COLUMNAS (Igual que antes)
+                // CONTROLES DE FILAS/COLUMNAS
                 Row(
                     modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).padding(8.dp),
                     horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically
@@ -213,54 +205,30 @@ fun GardenScreen(navController: NavController) {
             }
         }
 
-        // --- DIÁLOGOS DE CREACIÓN / EDICIÓN / BORRADO ---
-
-        // 1. AÑADIR JARDINERA
+        // --- DIÁLOGOS ---
         if (showAddGardenDialog) {
-            // Extraemos los textos en el contexto Composable
             val successMsg = stringResource(Res.string.dialog_success_garden_created)
-            val defaultNamePrefix = "Jardinera"
-
             AlertDialog(
                 onDismissRequest = { showAddGardenDialog = false },
                 title = { Text(stringResource(Res.string.dialog_garden_add_title)) },
-                text = {
-                    OutlinedTextField(
-                        value = tempName,
-                        onValueChange = { tempName = it },
-                        label = { Text(stringResource(Res.string.dialog_garden_add_hint)) },
-                        singleLine = true
-                    )
-                },
+                text = { OutlinedTextField(value = tempName, onValueChange = { tempName = it }, label = { Text(stringResource(Res.string.dialog_garden_add_hint)) }, singleLine = true) },
                 confirmButton = {
                     Button(onClick = {
                         val newId = (gardens.size + 1).toString()
-                        val finalName = if (tempName.isBlank()) "$defaultNamePrefix $newId" else tempName
-                        val newPage = GardenPage(newId, finalName, 2, List(8) { idx ->
-                            GardenSlot("n${newId}_$idx", "${idx+1}", null, null, null)
-                        })
+                        val finalName = if (tempName.isBlank()) "Jardinera $newId" else tempName
+                        val newPage = GardenPage(newId, finalName, 2, List(8) { idx -> GardenSlot("n${newId}_$idx", "${idx+1}", null, null, null) })
                         gardens = gardens + newPage
                         currentGardenIndex = gardens.size - 1
                         showAddGardenDialog = false
-                        // Ahora usamos la variable local segura
                         showSuccessDialog = successMsg
-                    }, colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) {
-                        Text(stringResource(Res.string.dialog_confirm))
-                    }
+                    }, colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) { Text(stringResource(Res.string.dialog_confirm)) }
                 },
-                dismissButton = {
-                    TextButton(onClick = { showAddGardenDialog = false }) {
-                        Text(stringResource(Res.string.dialog_cancel))
-                    }
-                }
+                dismissButton = { TextButton(onClick = { showAddGardenDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) } }
             )
         }
 
-// 2. BORRAR JARDINERA COMPLETA
         if (showDeleteGardenDialog) {
-            // Obtenemos el mensaje de éxito del archivo de recursos
             val deleteSuccessMsg = stringResource(Res.string.dialog_success_garden_deleted)
-
             AlertDialog(
                 onDismissRequest = { showDeleteGardenDialog = false },
                 title = { Text(stringResource(Res.string.dialog_garden_delete_title)) },
@@ -271,35 +239,18 @@ fun GardenScreen(navController: NavController) {
                         gardens = newGardens
                         showDeleteGardenDialog = false
                         showSuccessDialog = deleteSuccessMsg
-                    }, colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) {
-                        Text(stringResource(Res.string.dialog_confirm))
-                    }
+                    }, colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) { Text(stringResource(Res.string.dialog_confirm)) }
                 },
-                dismissButton = {
-                    TextButton(onClick = { showDeleteGardenDialog = false }) {
-                        Text(stringResource(Res.string.dialog_cancel))
-                    }
-                }
+                dismissButton = { TextButton(onClick = { showDeleteGardenDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) } }
             )
         }
 
-// 3. RENOMBRAR (DOBLE CLIC)
         if (showRenameDialog) {
-            // Aunque no hay un string específico en tu XML para "Nombre actualizado",
-            // lo ideal es usar uno genérico de éxito o añadirlo a Res.string
             val updateSuccessMsg = stringResource(Res.string.dialog_success_title)
-
             AlertDialog(
                 onDismissRequest = { showRenameDialog = false },
                 title = { Text(stringResource(Res.string.garden_rename_title)) },
-                text = {
-                    OutlinedTextField(
-                        value = tempName,
-                        onValueChange = { tempName = it },
-                        label = { Text(stringResource(Res.string.garden_rename_label)) },
-                        singleLine = true
-                    )
-                },
+                text = { OutlinedTextField(value = tempName, onValueChange = { tempName = it }, label = { Text(stringResource(Res.string.garden_rename_label)) }, singleLine = true) },
                 confirmButton = {
                     Button(onClick = {
                         if (tempName.isNotBlank()) {
@@ -307,19 +258,12 @@ fun GardenScreen(navController: NavController) {
                             showSuccessDialog = updateSuccessMsg
                         }
                         showRenameDialog = false
-                    }, colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) {
-                        Text(stringResource(Res.string.garden_rename_save))
-                    }
+                    }, colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) { Text(stringResource(Res.string.garden_rename_save)) }
                 },
-                dismissButton = {
-                    TextButton(onClick = { showRenameDialog = false }) {
-                        Text(stringResource(Res.string.dialog_cancel))
-                    }
-                }
+                dismissButton = { TextButton(onClick = { showRenameDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) } }
             )
         }
 
-        // 4. ALERTA DE ÉXITO GENÉRICA
         if (showSuccessDialog != null) {
             AlertDialog(
                 onDismissRequest = { showSuccessDialog = null },
@@ -329,7 +273,6 @@ fun GardenScreen(navController: NavController) {
             )
         }
 
-        // 5. POPUP PLANTA (Existente)
         if (showPlantSelector) {
             AlertDialog(
                 onDismissRequest = { showPlantSelector = false },
@@ -338,14 +281,13 @@ fun GardenScreen(navController: NavController) {
                 text = {
                     Column {
                         ListItem(headlineContent = { Text("Tomates") }, leadingContent = { Icon(Icons.Filled.Eco, null) }, modifier = Modifier.clickable { updateSlot(gardens, currentGardenIndex, selectedSlotIdForPlanting) { it.copy(contentName = "Tomates", status = "Sano", icon = Icons.Filled.Eco) }.also { gardens = it }; showPlantSelector = false })
-                        ListItem(headlineContent = { Text("Lechugas") }, leadingContent = { Icon(Icons.Filled.Eco, null) }, modifier = Modifier.clickable { showPlantSelector = false })
+                        ListItem(headlineContent = { Text("Lechugas") }, leadingContent = { Icon(Icons.Filled.Eco, null) }, modifier = Modifier.clickable { updateSlot(gardens, currentGardenIndex, selectedSlotIdForPlanting) { it.copy(contentName = "Lechugas", status = "Sano", icon = Icons.Filled.Eco) }.also { gardens = it }; showPlantSelector = false })
                     }
                 },
                 confirmButton = { TextButton(onClick = { showPlantSelector = false }) { Text(stringResource(Res.string.garden_popup_cancel)) } }
             )
         }
 
-        // 6. CONFIRMACIÓN HUECOS (Existente)
         if (actionToConfirm != null && slotIdToConfirm != null) {
             val title = if (actionToConfirm == SlotAction.HARVEST) stringResource(Res.string.dialog_harvest_title) else stringResource(Res.string.dialog_delete_slot_title)
             val msg = if (actionToConfirm == SlotAction.HARVEST) stringResource(Res.string.dialog_harvest_msg) else stringResource(Res.string.dialog_delete_slot_msg)
@@ -366,16 +308,19 @@ fun GardenScreen(navController: NavController) {
     }
 }
 
-// UTILIDADES
+// --- UTILIDADES ---
 enum class SlotAction { HARVEST, HIDE }
+
 fun updateGarden(list: List<GardenPage>, index: Int, update: (GardenPage) -> GardenPage): List<GardenPage> {
     val newList = list.toMutableList(); newList[index] = update(newList[index]); return newList
 }
+
 fun updateSlot(list: List<GardenPage>, gardenIndex: Int, slotId: String, update: (GardenSlot) -> GardenSlot): List<GardenPage> {
     val newList = list.toMutableList(); val cur = newList[gardenIndex]
     val newSlots = cur.slots.map { if (it.id == slotId) update(it) else it }
     newList[gardenIndex] = cur.copy(slots = newSlots); return newList
 }
+
 @Composable
 fun GardenSlotCard(slot: GardenSlot, onClick: () -> Unit, onAction: (SlotAction) -> Unit) {
     val isEmpty = slot.contentName == null
@@ -400,6 +345,7 @@ fun GardenSlotCard(slot: GardenSlot, onClick: () -> Unit, onAction: (SlotAction)
         }
     }
 }
+
 @Composable
 fun GhostSlotCard(onRestore: () -> Unit) {
     val stroke = Stroke(width = 2f, pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f))

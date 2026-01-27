@@ -170,4 +170,51 @@
     <string name="delete_confirm_alert_I">de inventario?</string>
     <string name="delete_confirm_diary">¿Deseas eliminar </string>
 
+    <string name="plant_info_title">Ficha Técnica</string>
+    <string name="plant_info_fruit">Fruto que da:</string>
+    <string name="plant_info_companions">Plantas amigas:</string>
+    <string name="plant_info_antagonists">Evitar juntar con:</string>
+    <string name="quick_actions_title">Acciones Rápidas</string>
+    <string name="history_care_title">Historial de Cuidados</string>
+
+    <string name="action_water">Regar</string>
+    <string name="action_prune">Podar</string>
+    <string name="action_pest">Antiplaga</string>
+    <string name="action_fertilize">Abonar</string>
+
+    <string name="alerts_screen_title">Próximos Avisos</string>
+    <string name="add_alert_btn">Añadir Aviso</string>
+
+    <string name="weather_title_now">El tiempo ahora</string>
+    <string name="weather_sunny">Soleado</string>
+    <string name="weather_cloudy">Nublado</string>
+    <string name="weather_rainy">Lluvia</string>
+    <string name="weather_night">Despejado</string>
+
+    <string name="quick_access_title">Mis Jardineras</string>
+    <string name="go_to_garden">Ir a %s</string>
+
+    <string name="ai_chat_title">Asistente de Cultivo</string>
+
+    <string name="tip_title">Consejo del Experto:</string>
+    <string name="tip_1">Limpia tus herramientas después de cada uso para evitar la propagación de hongos.</string>
+    <string name="tip_2">Guarda las semillas en un lugar fresco y seco para que no pierdan su capacidad de germinar.</string>
+    <string name="tip_3">Revisa periódicamente el envés de las hojas; es donde suelen esconderse las plagas.</string>
+
+    <string name="ai_chat_helper">Consultar a la IA</string>
+
+    <string name="home_search">Buscar planta o tarea...</string>
+
+
+    <string name="alert_description_hint">Descripción detallada</string>
+    <string name="alert_menu_edit">Editar aviso</string>
+    <string name="alert_menu_delete">Borrar aviso</string>
+    <string name="alert_date_select">Seleccionar fecha</string>
+
+    <string name="section_basic_info">Información Básica</string>
+    <string name="add_prod_desc_hint">Descripción del producto</string>
+    <string name="section_where_when">¿Dónde y Cuándo?</string>
+    <string name="section_details">Detalles de la Tarea</string>
+    <string name="photo_attached_label">Foto Adjuntada</string>
+
 </resources>

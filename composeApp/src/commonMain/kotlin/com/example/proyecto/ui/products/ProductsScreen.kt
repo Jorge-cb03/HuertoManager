@@ -34,7 +34,6 @@ data class InventoryItem(
 
 @Composable
 fun ProductsScreen(navController: NavController) {
-    // Convertimos la lista a MutableState para poder borrar elementos visualmente
     val initialInventory = listOf(
         InventoryItem("1", "Pala de Mano", ProductType.TOOL, "1 ud", "Herramienta básica"),
         InventoryItem("2", "Semillas Tomate", ProductType.SEED, "10 sobres", "Variedad Cherry"),
@@ -43,16 +42,11 @@ fun ProductsScreen(navController: NavController) {
         InventoryItem("5", "Tijeras de Podar", ProductType.TOOL, "2 uds", "Acero inoxidable")
     )
     var inventory by remember { mutableStateOf(initialInventory) }
-
-    // ESTADOS PARA EL DIÁLOGO DE BORRADO
     var showDeleteDialog by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<InventoryItem?>(null) }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(20.dp)
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(20.dp)
     ) {
         Text(
             stringResource(Res.string.products_title),
@@ -73,11 +67,12 @@ fun ProductsScreen(navController: NavController) {
                         navController.navigate(AppScreens.createProductDetailRoute(item.id))
                     },
                     onEdit = {
-                        // Por ahora navegamos al detalle al editar, o podrías crear una ruta 'edit_product/{id}'
-                        navController.navigate(AppScreens.createProductDetailRoute(item.id))
+                        // FIX: Navegamos a la pantalla de formulario enviando los datos actuales
+                        navController.navigate(
+                            "add_product?id=${item.id}&name=${item.name}&stock=${item.quantity}&type=${item.type.name}"
+                        )
                     },
                     onDelete = {
-                        // PREPARAMOS EL BORRADO: Guardamos el item y mostramos diálogo
                         itemToDelete = item
                         showDeleteDialog = true
                     }
@@ -101,16 +96,14 @@ fun ProductsScreen(navController: NavController) {
         }
     }
 
-    // --- DIÁLOGO DE CONFIRMACIÓN DE BORRADO ---
     if (showDeleteDialog && itemToDelete != null) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(Res.string.dialog_delete_slot_title)) }, // Reutilizamos título "¿Eliminar?"
+            title = { Text(stringResource(Res.string.dialog_delete_slot_title)) },
             text = { Text(stringResource(Res.string.delete_confirm_alert) +" '${itemToDelete?.name}' "+stringResource(Res.string.delete_confirm_alert_I)) },
             confirmButton = {
                 Button(
                     onClick = {
-                        // ACCIÓN DE BORRAR
                         inventory = inventory.filter { it.id != itemToDelete!!.id }
                         showDeleteDialog = false
                         itemToDelete = null
@@ -143,21 +136,16 @@ fun InventoryCard(
         ProductType.FERTILIZER -> Icons.Filled.Science
         ProductType.OTHER -> Icons.Filled.Inventory2
     }
-
     val tagColor = when(item.type) {
         ProductType.TOOL -> Color(0xFF90CAF9)
         ProductType.SEED -> Color(0xFFA5D6A7)
         ProductType.CHEMICAL -> Color(0xFFEF9A9A)
         else -> Color.Gray
     }
-
     var showMenu by remember { mutableStateOf(false) }
 
     HuertaCard(onClick = onClick) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Surface(
                 color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
@@ -167,14 +155,11 @@ fun InventoryCard(
                     Icon(icon, null, tint = MaterialTheme.colorScheme.primary)
                 }
             }
-
             Spacer(Modifier.width(16.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 Text(item.name, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
                 Text(item.description ?: "", fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1)
             }
-
             Column(horizontalAlignment = Alignment.End) {
                 Surface(
                     color = tagColor.copy(alpha = 0.2f),
@@ -185,28 +170,14 @@ fun InventoryCard(
                 Spacer(Modifier.height(4.dp))
                 Text(item.quantity, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             }
-
             Spacer(Modifier.width(8.dp))
-
             Box {
                 IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp)) {
                     Icon(Icons.Filled.MoreVert, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
-                DropdownMenu(
-                    expanded = showMenu,
-                    onDismissRequest = { showMenu = false },
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                ) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.menu_edit)) },
-                        leadingIcon = { Icon(Icons.Filled.Edit, null) },
-                        onClick = { showMenu = false; onEdit() }
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.menu_delete), color = RedDanger) },
-                        leadingIcon = { Icon(Icons.Filled.Delete, null, tint = RedDanger) },
-                        onClick = { showMenu = false; onDelete() }
-                    )
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(text = { Text(stringResource(Res.string.menu_edit)) }, leadingIcon = { Icon(Icons.Filled.Edit, null) }, onClick = { showMenu = false; onEdit() })
+                    DropdownMenuItem(text = { Text(stringResource(Res.string.menu_delete), color = RedDanger) }, leadingIcon = { Icon(Icons.Filled.Delete, null, tint = RedDanger) }, onClick = { showMenu = false; onDelete() })
                 }
             }
         }

@@ -169,4 +169,48 @@
     <string name="delete_confirm_alert_I">from inventory?</string>
     <string name="delete_confirm_diary">Do you want to delete </string>
 
+    <string name="plant_info_title">Technical Sheet</string>
+    <string name="plant_info_fruit">Fruit produced:</string>
+    <string name="plant_info_companions">Companion plants:</string>
+    <string name="plant_info_antagonists">Avoid planting with:</string>
+    <string name="quick_actions_title">Quick Actions</string>
+    <string name="history_care_title">Care History</string>
+
+    <string name="action_water">Water</string>
+    <string name="action_prune">Prune</string>
+    <string name="action_pest">Pest Control</string>
+    <string name="action_fertilize">Fertilize</string>
+
+    <string name="alerts_screen_title">Upcoming Alerts</string>
+    <string name="add_alert_btn">Add Alert</string>
+
+    <string name="weather_title_now">Current Weather</string>
+    <string name="weather_sunny">Sunny</string>
+    <string name="weather_cloudy">Cloudy</string>
+    <string name="weather_rainy">Rainy</string>
+    <string name="weather_night">Clear Sky</string>
+
+    <string name="quick_access_title">My Gardens</string>
+    <string name="go_to_garden">Go to %s</string>
+
+    <string name="ai_chat_title">Crop Assistant</string>
+
+    <string name="tip_title">Expert Tip:</string>
+    <string name="tip_1">Clean your tools after each use to prevent the spread of fungal diseases.</string>
+    <string name="tip_2">Store seeds in a cool, dry place so they don\'t lose their ability to germinate.</string>
+    <string name="tip_3">Periodically check the underside of leaves; that\'s where pests usually hide.</string>
+
+    <string name="ai_chat_helper">Ask the AI</string>
+
+    <string name="alert_description_hint">Detailed description</string>
+    <string name="alert_menu_edit">Edit alert</string>
+    <string name="alert_menu_delete">Delete alert</string>
+    <string name="alert_date_select">Select date</string>
+
+    <string name="section_basic_info">Basic Information</string>
+    <string name="add_prod_desc_hint">Product description</string>
+    <string name="section_where_when">Where and When?</string>
+    <string name="section_details">Task Details</string>
+    <string name="photo_attached_label">Photo Attached</string>
+
 </resources>
