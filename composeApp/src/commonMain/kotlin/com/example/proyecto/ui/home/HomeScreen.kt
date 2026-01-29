@@ -23,12 +23,26 @@ import com.example.proyecto.ui.theme.GreenPrimary
 import kotlinx.datetime.*
 import org.jetbrains.compose.resources.stringResource
 import huertomanager.composeapp.generated.resources.*
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.foundation.horizontalScroll
+import com.example.proyecto.ui.garden.GardenViewModel
+import org.koin.compose.viewmodel.koinViewModel
+
+// GESTOR DE ACCESOS DIRECTOS (El "array" global)
+object ShortcutManager {
+    val pinnedGardenIds = mutableStateListOf<Long>()
+}
 
 @Composable
-fun HomeScreen(navController: NavController) {
+fun HomeScreen(navController: NavController, viewModel: GardenViewModel = koinViewModel()) {
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
     val now = remember { Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()) }
-    val gardens = listOf("Invernadero", "Terraza", "Cama Alta")
+
+    // Obtenemos las jardineras reales del ViewModel
+    val jardineras by viewModel.jardineras.collectAsState()
+
+    // Filtramos las jardineras que están en nuestro array de IDs anclados
+    val pinnedGardens = jardineras.filter { ShortcutManager.pinnedGardenIds.contains(it.id) }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 20.dp).verticalScroll(rememberScrollState())) {
         Row(Modifier.fillMaxWidth().padding(top = 40.dp, bottom = 20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -47,27 +61,42 @@ fun HomeScreen(navController: NavController) {
         Spacer(Modifier.height(30.dp))
         Text(stringResource(Res.string.quick_access_title), fontWeight = FontWeight.Bold, fontSize = 18.sp)
 
-        Row(Modifier.fillMaxWidth().padding(vertical = 10.dp), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            gardens.forEachIndexed { index, name ->
-                Card(
-                    modifier = Modifier.weight(1f).height(80.dp).clickable {
-                        navController.navigate("garden/$index") { launchSingleTop = true }
-                    },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Default.Grass, null, tint = GreenPrimary)
-                        Text(name, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+        // SECCIÓN DINÁMICA DE ACCESOS RÁPIDOS
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp).horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            if (pinnedGardens.isEmpty()) {
+                // Mensaje si no hay nada anclado
+                Text(
+                    text = "No tienes accesos directos.\nAncla una jardinera con la chincheta.",
+                    fontSize = 12.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(vertical = 10.dp)
+                )
+            } else {
+                pinnedGardens.forEach { garden ->
+                    // Buscamos su índice original para que la navegación funcione bien
+                    val originalIndex = jardineras.indexOf(garden)
+
+                    Card(
+                        modifier = Modifier.width(120.dp).height(80.dp).clickable {
+                            navController.navigate("garden/$originalIndex") { launchSingleTop = true }
+                        },
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                    ) {
+                        Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.Grass, null, tint = GreenPrimary)
+                            Text(garden.nombre, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1, modifier = Modifier.padding(horizontal = 4.dp))
+                        }
                     }
                 }
             }
         }
 
-        // BONUS PVZ GIF PLACEHOLDER
         Box(Modifier.fillMaxWidth().padding(top = 40.dp), contentAlignment = Alignment.Center) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 IconButton(onClick = { /* Navegar a Chat IA */ }, Modifier.size(110.dp)) {
-                    // Aquí cargarás tu GIF más adelante
                     Icon(Icons.Default.AutoAwesome, null, tint = GreenPrimary, modifier = Modifier.fillMaxSize())
                 }
                 Text(stringResource(Res.string.ai_chat_helper), fontSize = 12.sp, color = GreenPrimary, fontWeight = FontWeight.Bold)
