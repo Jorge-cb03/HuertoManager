@@ -12,7 +12,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.proyecto.ui.navigation.AppScreens
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
-import proyecto.composeapp.generated.resources.*
+import huertomanager.composeapp.generated.resources.*
 
 sealed class BottomNavItem(val resource: StringResource, val icon: ImageVector, val route: String) {
     object Home : BottomNavItem(Res.string.menu_home, Icons.Default.Home, AppScreens.Home)

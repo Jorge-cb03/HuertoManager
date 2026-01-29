@@ -55,6 +55,8 @@ object AppScreens {
     fun createAddDiaryRoute(dateMillis: Long) = "add_diary_entry/$dateMillis"
 }
 
+// ... (manten los imports igual)
+
 @Composable
 fun AppNavigation(
     isDarkTheme: Boolean,
@@ -64,16 +66,11 @@ fun AppNavigation(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    // Ocultar menú inferior en el Login y Registro para una UX limpia
     val showBottomBar = currentRoute != AppScreens.Login && currentRoute != AppScreens.Register
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            if (showBottomBar) {
-                BottomMenu(navController = navController)
-            }
-        }
+        bottomBar = { if (showBottomBar) BottomMenu(navController = navController) }
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -83,38 +80,23 @@ fun AppNavigation(
             // 1. LOGIN
             composable(AppScreens.Login) {
                 LoginScreen(
-                    onLoginSuccess = {
-                        navController.navigate(AppScreens.Home) {
-                            popUpTo(AppScreens.Login) { inclusive = true }
-                        }
-                    },
-                    onNavigateToRegister = {
-                        navController.navigate(AppScreens.Register)
-                    }
+                    onLoginSuccess = { navController.navigate(AppScreens.Home) { popUpTo(AppScreens.Login) { inclusive = true } } },
+                    onNavigateToRegister = { navController.navigate(AppScreens.Register) }
                 )
             }
 
             // 2. REGISTRO
             composable(AppScreens.Register) {
                 RegisterScreen(
-                    onRegisterSuccess = {
-                        navController.navigate(AppScreens.Home) {
-                            popUpTo(AppScreens.Register) { inclusive = true }
-                        }
-                    },
-                    onBackToLogin = {
-                        navController.popBackStack()
-                    }
+                    onRegisterSuccess = { navController.navigate(AppScreens.Home) { popUpTo(AppScreens.Register) { inclusive = true } } },
+                    onBackToLogin = { navController.popBackStack() }
                 )
             }
 
-            // 3. HOME (Rediseñado con Clima y Accesos)
             composable(AppScreens.Home) { HomeScreen(navController) }
-
-            // 4. NOTIFICACIONES (Nueva pantalla dedicada)
             composable(AppScreens.Alerts) { AlertsScreen(navController) }
 
-            // 5. JARDINERA (Con sincronización de índice desde Home)
+            // 5. JARDINERA
             composable(
                 route = AppScreens.Garden,
                 arguments = listOf(navArgument("gardenIndex") { type = NavType.IntType })
@@ -123,78 +105,33 @@ fun AppNavigation(
                 GardenScreen(navController = navController, initialGardenIndex = index)
             }
 
-            // 6. DETALLE HUECO JARDINERA
+            // 6. DETALLE HUECO (ID Real)
             composable(
                 route = AppScreens.GardenSlotDetail,
                 arguments = listOf(navArgument("slotName") { type = NavType.StringType })
             ) { backStackEntry ->
-                val slotName = backStackEntry.arguments?.getString("slotName") ?: "Desconocido"
-                GardenSlotDetailScreen(navController = navController, slotName = slotName)
+                val id = backStackEntry.arguments?.getString("slotName") ?: "0"
+                GardenSlotDetailScreen(navController = navController, bancalId = id)
             }
 
-            // 7. DIARIO
-            composable(AppScreens.Diary) {
-                DiaryScreen(navController = navController)
-            }
+            composable(AppScreens.Diary) { DiaryScreen(navController) }
 
-            // 8. AÑADIR ENTRADA DIARIO
+            // 8. AÑADIR ENTRADA DIARIO (Corregido sin parámetros fantasma)
             composable(
                 route = AppScreens.AddDiaryEntry,
                 arguments = listOf(navArgument("dateMillis") { type = NavType.LongType })
             ) { backStackEntry ->
                 val dateMillis = backStackEntry.arguments?.getLong("dateMillis") ?: 0L
-                AddDiaryEntryScreen(navController = navController, initialDateMillis = dateMillis)
-            }
-
-            // 9. PRODUCTOS (INVENTARIO)
-            composable(AppScreens.Products) {
-                ProductsScreen(navController = navController)
-            }
-
-            // 10. AÑADIR PRODUCTO
-            composable(AppScreens.AddProduct) {
-                AddProductScreen(navController = navController)
-            }
-
-            // COMPOSABLE DIARIO (MODO EDICIÓN)
-            composable(
-                route = AppScreens.AddDiaryEntry,
-                arguments = listOf(
-                    navArgument("dateMillis") { type = NavType.LongType },
-                    navArgument("taskId") { nullable = true; defaultValue = null },
-                    navArgument("title") { nullable = true; defaultValue = null },
-                    navArgument("desc") { nullable = true; defaultValue = null }
-                )
-            ) { backStackEntry ->
                 AddDiaryEntryScreen(
                     navController = navController,
-                    initialDateMillis = backStackEntry.arguments?.getLong("dateMillis") ?: 0L,
-                    taskId = backStackEntry.arguments?.getString("taskId"),
-                    initialTitle = backStackEntry.arguments?.getString("title"),
-                    initialDesc = backStackEntry.arguments?.getString("desc")
+                    initialDateMillis = dateMillis
                 )
             }
 
-            composable(AppScreens.Products) { ProductsScreen(navController = navController) }
+            composable(AppScreens.Products) { ProductsScreen(navController) }
 
-            // COMPOSABLE PRODUCTOS (MODO EDICIÓN)
-            composable(
-                route = AppScreens.AddProduct,
-                arguments = listOf(
-                    navArgument("id") { nullable = true; defaultValue = null },
-                    navArgument("name") { nullable = true; defaultValue = null },
-                    navArgument("stock") { nullable = true; defaultValue = null },
-                    navArgument("type") { nullable = true; defaultValue = null }
-                )
-            ) { backStackEntry ->
-                AddProductScreen(
-                    navController = navController,
-                    productId = backStackEntry.arguments?.getString("id"),
-                    initialName = backStackEntry.arguments?.getString("name"),
-                    initialStock = backStackEntry.arguments?.getString("stock"),
-                    initialType = backStackEntry.arguments?.getString("type")
-                )
-            }
+            // 10. AÑADIR PRODUCTO (Limpio)
+            composable(AppScreens.AddProduct) { AddProductScreen(navController = navController) }
 
             // 11. DETALLE PRODUCTO
             composable(
@@ -205,19 +142,11 @@ fun AppNavigation(
                 ProductDetailScreen(navController = navController, productId = productId)
             }
 
-            // 12. PERFIL
             composable(AppScreens.Profile) {
-                ProfileScreen(
-                    navController = navController,
-                    isDarkTheme = isDarkTheme,
-                    onToggleTheme = onToggleTheme
-                )
+                ProfileScreen(navController = navController, isDarkTheme = isDarkTheme, onToggleTheme = onToggleTheme)
             }
 
-            // 13. ACERCA DE
-            composable(AppScreens.About) {
-                AboutScreen(navController = navController)
-            }
+            composable(AppScreens.About) { AboutScreen(navController = navController) }
         }
     }
 }

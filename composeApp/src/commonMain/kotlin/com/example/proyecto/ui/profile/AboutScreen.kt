@@ -22,7 +22,7 @@ import androidx.navigation.NavController
 import com.example.proyecto.ui.HuertaCard
 import com.example.proyecto.ui.theme.GreenPrimary
 import org.jetbrains.compose.resources.stringResource
-import proyecto.composeapp.generated.resources.*
+import huertomanager.composeapp.generated.resources.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

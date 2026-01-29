@@ -23,7 +23,7 @@ koin = "4.0.0"
 ktor = "2.3.12"
 room = "2.7.0-alpha13"
 sqlite = "2.5.0-alpha13"
-coil = "3.0.0-rc01"
+# coil = "3.0.4"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -61,8 +61,8 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
 sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sqlite" }
 # Coil
-coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
-coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor", version.ref = "coil" }
+# coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+# coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor", version.ref = "coil" }
 
 
 [plugins]

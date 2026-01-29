@@ -12,10 +12,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.proyecto.domain.model.ProductType
 import com.example.proyecto.ui.HuertaInput
 import com.example.proyecto.ui.theme.GreenPrimary
 import org.jetbrains.compose.resources.stringResource
-import proyecto.composeapp.generated.resources.*
+import huertomanager.composeapp.generated.resources.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

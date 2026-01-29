@@ -25,7 +25,7 @@ import com.example.proyecto.ui.theme.GreenSecondary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.stringResource
-import proyecto.composeapp.generated.resources.*
+import huertomanager.composeapp.generated.resources.*
 
 @Composable
 fun LoginScreen(onLoginSuccess: () -> Unit, onNavigateToRegister: () -> Unit) {

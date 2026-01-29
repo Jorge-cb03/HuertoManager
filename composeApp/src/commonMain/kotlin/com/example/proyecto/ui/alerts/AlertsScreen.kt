@@ -25,7 +25,7 @@ import com.example.proyecto.ui.theme.RedDanger
 import com.example.proyecto.util.NotificationManager
 import kotlinx.datetime.*
 import org.jetbrains.compose.resources.stringResource
-import proyecto.composeapp.generated.resources.*
+import huertomanager.composeapp.generated.resources.*
 
 @Immutable
 data class AlertUiModel(

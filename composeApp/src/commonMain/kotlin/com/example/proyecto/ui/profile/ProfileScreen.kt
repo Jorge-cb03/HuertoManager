@@ -28,7 +28,7 @@ import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
 import com.example.proyecto.util.MediaManager
 import org.jetbrains.compose.resources.stringResource
-import proyecto.composeapp.generated.resources.*
+import huertomanager.composeapp.generated.resources.*
 
 @Composable
 fun ProfileScreen(

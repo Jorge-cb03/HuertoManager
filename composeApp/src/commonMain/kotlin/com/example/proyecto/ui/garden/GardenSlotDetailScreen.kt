@@ -17,39 +17,42 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.proyecto.data.database.entity.BancalEntity
+import com.example.proyecto.data.database.entity.EntradaDiarioEntity
 import com.example.proyecto.ui.HuertaCard
-import com.example.proyecto.ui.diary.DiaryTask
 import com.example.proyecto.ui.theme.GreenPrimary
-import kotlinx.datetime.*
 import org.jetbrains.compose.resources.stringResource
-import proyecto.composeapp.generated.resources.*
+import huertomanager.composeapp.generated.resources.*
+import org.koin.compose.viewmodel.koinViewModel
+import kotlinx.datetime.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GardenSlotDetailScreen(
     navController: NavController,
-    slotName: String
+    bancalId: String, // Recibimos el ID real de la base de datos
+    viewModel: GardenViewModel = koinViewModel()
 ) {
+    val id = bancalId.toLongOrNull() ?: 0L
     var showInfoPopup by remember { mutableStateOf(false) }
     val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
 
-    // Simulación de historial (Sincronizado con Diario)
-    val diaryHistory = remember {
-        mutableStateListOf(
-            DiaryTask("1", "Riego", "08:30 AM", "Riego manual", slotName, today.minus(1, DateTimeUnit.DAY)),
-            DiaryTask("2", "Abonado", "10:00 AM", "Abono orgánico", slotName, today.minus(3, DateTimeUnit.DAY))
-        )
+    // --- OBSERVACIÓN DE DATOS REALES ---
+    var bancal by remember { mutableStateOf<BancalEntity?>(null) }
+    val historial by viewModel.getHistorial(id).collectAsState(initial = emptyList())
+
+    LaunchedEffect(id) {
+        bancal = viewModel.getBancalById(id)
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(slotName) },
+                title = { Text(bancal?.nombreCultivo ?: stringResource(Res.string.garden_empty)) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(Icons.Default.ArrowBack, null)
@@ -65,8 +68,7 @@ fun GardenSlotDetailScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .verticalScroll(rememberScrollState())
         ) {
-            // --- NUEVO: SITIO PARA LA IMAGEN DE LA API ---
-            // Aquí es donde tu compañero pondrá la llamada a la API (usando Coil, Kamel, etc.)
+            // --- BOX PARA LA IMAGEN DE LA API (RESTAURADO) ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -76,16 +78,16 @@ fun GardenSlotDetailScreen(
                     .background(MaterialTheme.colorScheme.surfaceVariant),
                 contentAlignment = Alignment.Center
             ) {
-                // Placeholder temporal hasta que conectéis la API
+                // Aquí irá Coil más adelante. De momento dejamos el diseño intacto.
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
                         Icons.Default.Image,
-                        contentDescription = null,
+                        null,
                         modifier = Modifier.size(48.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
                     Text(
-                        "Espacio para Imagen API",
+                        "Imagen de OpenFarm",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )
@@ -94,7 +96,7 @@ fun GardenSlotDetailScreen(
 
             Column(modifier = Modifier.padding(horizontal = 20.dp)) {
 
-                // --- CABECERA (FOTO 1): NOMBRE E ICONO INFO ---
+                // --- CABECERA: NOMBRE E ICONO INFO (DATOS REALES) ---
                 HuertaCard {
                     Row(
                         Modifier.fillMaxWidth(),
@@ -103,21 +105,30 @@ fun GardenSlotDetailScreen(
                     ) {
                         Column {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("Tomates Cherry", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                                IconButton(onClick = { showInfoPopup = true }) {
-                                    Icon(Icons.Default.Info, "Info", tint = GreenPrimary, modifier = Modifier.size(24.dp))
+                                Text(
+                                    text = bancal?.nombreCultivo ?: stringResource(Res.string.garden_empty),
+                                    fontSize = 22.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                if (bancal?.nombreCultivo != null) {
+                                    IconButton(onClick = { showInfoPopup = true }) {
+                                        Icon(Icons.Default.Info, "Info", tint = GreenPrimary, modifier = Modifier.size(24.dp))
+                                    }
                                 }
                             }
-                            Text("Plantado en: $slotName", color = MaterialTheme.colorScheme.secondary)
+                            Text(
+                                text = "Bancal: Fila ${bancal?.fila?.plus(1)} - Col ${bancal?.columna?.plus(1)}",
+                                color = MaterialTheme.colorScheme.secondary
+                            )
                         }
                     }
                 }
 
                 Spacer(Modifier.height(25.dp))
 
-                // --- ACCIONES RÁPIDAS (FOTO 2) ---
+                // --- ACCIONES RÁPIDAS (DISEÑO ORIGINAL) ---
                 Text(
-                    stringResource(Res.string.quick_actions_title),
+                    text = stringResource(Res.string.quick_actions_title),
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     modifier = Modifier.padding(bottom = 12.dp)
@@ -136,36 +147,43 @@ fun GardenSlotDetailScreen(
 
                     actions.forEach { (label, icon, taskTitle) ->
                         QuickActionItem(label, icon, Modifier.weight(1f)) {
-                            diaryHistory.add(0, DiaryTask("${Clock.System.now().toEpochMilliseconds()}", taskTitle, "Ahora", "Acción Rápida", slotName, today))
+                            // Aquí lanzaremos la acción real a la base de datos en el futuro
                         }
                     }
                 }
 
                 Spacer(Modifier.height(25.dp))
 
-                // --- HISTORIAL (FOTO 3): SINCRONIZADO ---
+                // --- HISTORIAL SINCRONIZADO (TIMELINE ORIGINAL) ---
                 Text(
-                    stringResource(Res.string.history_care_title),
+                    text = stringResource(Res.string.history_care_title),
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp,
                     modifier = Modifier.padding(bottom = 15.dp)
                 )
 
-                diaryHistory.forEachIndexed { index, task ->
-                    TimelineItem(
-                        title = task.title,
-                        desc = task.description,
-                        time = if(task.date == today) "Hoy" else "${task.date.dayOfMonth}/${task.date.monthNumber}",
-                        icon = when(task.title) {
-                            "Riego" -> Icons.Default.WaterDrop
-                            "Poda" -> Icons.Default.ContentCut
-                            "Antiplaga" -> Icons.Default.BugReport
-                            "Abonado" -> Icons.Default.Science
-                            else -> Icons.Default.Agriculture
-                        },
-                        color = GreenPrimary,
-                        showLine = index != diaryHistory.size - 1
-                    )
+                if (historial.isEmpty()) {
+                    Text("No hay registros en el diario.", color = Color.Gray, fontSize = 14.sp)
+                } else {
+                    historial.sortedByDescending { it.fecha }.forEachIndexed { index, entrada ->
+                        val date = Instant.fromEpochMilliseconds(entrada.fecha).toLocalDateTime(TimeZone.currentSystemDefault())
+                        val timeStr = if (date.date == today) "Hoy" else "${date.dayOfMonth}/${date.monthNumber}"
+
+                        TimelineItem(
+                            title = entrada.tipoAccion,
+                            desc = entrada.descripcion, // CORREGIDO: descripcion
+                            time = timeStr,
+                            icon = when (entrada.tipoAccion) {
+                                "SIEMBRA" -> Icons.Default.Eco
+                                "Riego" -> Icons.Default.WaterDrop
+                                "Poda" -> Icons.Default.ContentCut
+                                "Abonado" -> Icons.Default.Science
+                                else -> Icons.Default.Agriculture
+                            },
+                            color = if (entrada.tipoAccion == "SIEMBRA") GreenPrimary else MaterialTheme.colorScheme.primary,
+                            showLine = index != historial.size - 1
+                        )
+                    }
                 }
 
                 Spacer(Modifier.height(30.dp))
@@ -173,14 +191,14 @@ fun GardenSlotDetailScreen(
         }
     }
 
-    // POPUP INFO TÉCNICA
+    // POPUP INFO TÉCNICA (RESTURADO)
     if (showInfoPopup) {
         AlertDialog(
             onDismissRequest = { showInfoPopup = false },
             title = { Text(stringResource(Res.string.plant_info_title)) },
             text = {
                 Column {
-                    InfoRow(stringResource(Res.string.plant_info_fruit), "Tomate rojo pequeño y dulce.")
+                    InfoRow(stringResource(Res.string.plant_info_fruit), "Información cargada desde OpenFarm.")
                     InfoRow(stringResource(Res.string.plant_info_companions), "Albahaca, Caléndula, Zanahoria.")
                     InfoRow(stringResource(Res.string.plant_info_antagonists), "Patatas, Hinojo.")
                 }
@@ -193,6 +211,8 @@ fun GardenSlotDetailScreen(
         )
     }
 }
+
+// --- COMPONENTES DE APOYO (RESTAURADOS) ---
 
 @Composable
 fun QuickActionItem(label: String, icon: ImageVector, modifier: Modifier, onClick: () -> Unit) {
@@ -209,14 +229,6 @@ fun QuickActionItem(label: String, icon: ImageVector, modifier: Modifier, onClic
             Spacer(Modifier.height(6.dp))
             Text(label, fontSize = 10.sp, fontWeight = FontWeight.Bold, maxLines = 1)
         }
-    }
-}
-
-@Composable
-fun InfoRow(label: String, value: String) {
-    Column(Modifier.padding(vertical = 6.dp)) {
-        Text(label, fontWeight = FontWeight.Bold, color = GreenPrimary, fontSize = 14.sp)
-        Text(value, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -250,5 +262,13 @@ fun TimelineItem(title: String, desc: String, time: String, icon: ImageVector, c
             }
             Text(text = desc, color = MaterialTheme.colorScheme.secondary, fontSize = 13.sp)
         }
+    }
+}
+
+@Composable
+fun InfoRow(label: String, value: String) {
+    Column(Modifier.padding(vertical = 6.dp)) {
+        Text(label, fontWeight = FontWeight.Bold, color = GreenPrimary, fontSize = 14.sp)
+        Text(value, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
     }
 }

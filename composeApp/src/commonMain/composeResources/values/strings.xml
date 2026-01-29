@@ -217,4 +217,8 @@
     <string name="section_details">Detalles de la Tarea</string>
     <string name="photo_attached_label">Foto Adjuntada</string>
 
+    <string name="section_tasks">Tareas del día</string>
+    <string name="menu_add">Añadir</string>
+
+    <string name="diary_title">Diario de Cultivo</string>
 </resources>

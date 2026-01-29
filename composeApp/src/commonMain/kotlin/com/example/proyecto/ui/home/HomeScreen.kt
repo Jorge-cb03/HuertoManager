@@ -22,7 +22,7 @@ import com.example.proyecto.ui.navigation.AppScreens
 import com.example.proyecto.ui.theme.GreenPrimary
 import kotlinx.datetime.*
 import org.jetbrains.compose.resources.stringResource
-import proyecto.composeapp.generated.resources.*
+import huertomanager.composeapp.generated.resources.*
 
 @Composable
 fun HomeScreen(navController: NavController) {

@@ -6,9 +6,14 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface EntradaDiarioDao {
-    @Query("SELECT * FROM diarios WHERE bancalId = :bancalId ORDER BY fecha DESC")
-    fun getDiarioByBancal(bancalId: Long): Flow<List<EntradaDiarioEntity>>
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEntrada(entrada: EntradaDiarioEntity)
+
+    // Para el detalle del bancal (ya lo tienes)
+    @Query("SELECT * FROM entradas_diario WHERE bancalId = :bancalId ORDER BY fecha DESC")
+    fun getDiarioByBancal(bancalId: Long): Flow<List<EntradaDiarioEntity>>
+
+    // NUEVO: Para el Diario General
+    @Query("SELECT * FROM entradas_diario ORDER BY fecha DESC")
+    fun getAllEntradas(): Flow<List<EntradaDiarioEntity>>
 }

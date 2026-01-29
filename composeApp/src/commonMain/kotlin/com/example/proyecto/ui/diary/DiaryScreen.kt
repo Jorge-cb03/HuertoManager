@@ -20,242 +20,182 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.proyecto.data.database.entity.EntradaDiarioEntity
 import com.example.proyecto.ui.HuertaCard
+import com.example.proyecto.ui.garden.GardenViewModel
+import com.example.proyecto.ui.garden.TimelineItem
 import com.example.proyecto.ui.navigation.AppScreens
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
 import org.jetbrains.compose.resources.stringResource
-import proyecto.composeapp.generated.resources.*
+import huertomanager.composeapp.generated.resources.*
 import kotlinx.datetime.*
+import org.koin.compose.viewmodel.koinViewModel
 
-// Mantenemos tu modelo de datos
-data class DiaryTask(
-    val id: String,
-    val title: String,
-    val time: String,
-    val description: String,
-    val jardineraName: String,
-    val date: LocalDate
-)
+@Composable
+fun DiaryScreen(navController: NavController, viewModel: GardenViewModel = koinViewModel()) {
+    // --- DATOS REALES ---
+    val historial by viewModel.historialGeneral.collectAsState()
 
-// Funciones de utilidad para el calendario
+    // --- ESTADO DEL CALENDARIO (RESTAURADO) ---
+    val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
+    var selectedDate by remember { mutableStateOf(today) }
+    var currentMonth by remember { mutableStateOf(today.monthNumber) }
+    var currentYear by remember { mutableStateOf(today.year) }
+
+    // Filtramos las entradas de la DB para el día seleccionado
+    val entriesForSelectedDay = historial.filter {
+        val date = Instant.fromEpochMilliseconds(it.fecha).toLocalDateTime(TimeZone.currentSystemDefault()).date
+        date == selectedDate
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
+        // Título
+        Text(
+            text = stringResource(Res.string.diary_title),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(20.dp))
+
+        // --- CALENDARIO (DISEÑO ORIGINAL) ---
+        HuertaCard {
+            Column {
+                // Cabecera mes/año
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = {
+                        if (currentMonth == 1) { currentMonth = 12; currentYear-- } else currentMonth--
+                    }) { Icon(Icons.Default.ChevronLeft, null) }
+
+                    Text(
+                        text = "${getMonthNameResource(currentMonth)} $currentYear",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+
+                    IconButton(onClick = {
+                        if (currentMonth == 12) { currentMonth = 1; currentYear++ } else currentMonth++
+                    }) { Icon(Icons.Default.ChevronRight, null) }
+                }
+
+                Spacer(Modifier.height(10.dp))
+
+                // Días de la semana
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
+                    listOf("L", "M", "X", "J", "V", "S", "D").forEach { day ->
+                        Text(day, fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    }
+                }
+
+                // Cuadrícula de días
+                val daysInMonth = getDaysInMonth(currentMonth, currentYear)
+                val firstDay = getFirstDayOfWeek(currentMonth, currentYear)
+
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(7),
+                    modifier = Modifier.height(220.dp).padding(top = 10.dp)
+                ) {
+                    // Espacios vacíos
+                    items(firstDay) { Spacer(Modifier.fillMaxSize()) }
+
+                    // Días reales
+                    items(daysInMonth) { dayIndex ->
+                        val day = dayIndex + 1
+                        val isSelected = selectedDate.dayOfMonth == day &&
+                                selectedDate.monthNumber == currentMonth &&
+                                selectedDate.year == currentYear
+
+                        Box(
+                            modifier = Modifier
+                                .aspectRatio(1f)
+                                .padding(4.dp)
+                                .clip(CircleShape)
+                                .background(if (isSelected) GreenPrimary else Color.Transparent)
+                                .clickable { selectedDate = LocalDate(currentYear, currentMonth, day) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = day.toString(),
+                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                                fontSize = 14.sp,
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Spacer(Modifier.height(25.dp))
+
+        // --- LISTA DE TAREAS (DISEÑO ORIGINAL CON DATOS REALES) ---
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(Res.string.section_tasks),
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
+            )
+            TextButton(onClick = { navController.navigate(AppScreens.createAddDiaryRoute(selectedDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds())) }) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(Res.string.menu_add))
+                }
+            }
+        }
+
+        if (entriesForSelectedDay.isEmpty()) {
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Text("No hay tareas para este día.", color = Color.Gray)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(entriesForSelectedDay) { entrada ->
+                    // Reutilizamos el TimelineItem para mantener coherencia visual
+                    TimelineItem(
+                        title = entrada.tipoAccion,
+                        desc = entrada.descripcion,
+                        time = "Registrado",
+                        icon = when(entrada.tipoAccion) {
+                            "SIEMBRA" -> Icons.Default.Eco
+                            "Riego" -> Icons.Default.WaterDrop
+                            "CREACION" -> Icons.Default.AddHome
+                            else -> Icons.Default.Agriculture
+                        },
+                        color = GreenPrimary,
+                        showLine = false // En la lista general no hace falta la línea
+                    )
+                }
+            }
+        }
+    }
+}
+
+// --- UTILIDADES (RESTAURADAS) ---
+
 fun getDaysInMonth(month: Int, year: Int): Int {
     val start = LocalDate(year, month, 1)
-    val nextMonth = start.plus(1, DateTimeUnit.MONTH)
+    val nextMonth = if (month == 12) LocalDate(year + 1, 1, 1) else LocalDate(year, month + 1, 1)
     return start.daysUntil(nextMonth)
 }
-fun getFirstDayOfWeek(month: Int, year: Int): Int { return LocalDate(year, month, 1).dayOfWeek.ordinal }
+
+fun getFirstDayOfWeek(month: Int, year: Int): Int {
+    return LocalDate(year, month, 1).dayOfWeek.ordinal
+}
 
 @Composable
 fun getMonthNameResource(monthNumber: Int): String {
     return when(monthNumber) {
-        1 -> stringResource(Res.string.month_1); 2 -> stringResource(Res.string.month_2)
-        3 -> stringResource(Res.string.month_3); 4 -> stringResource(Res.string.month_4)
-        5 -> stringResource(Res.string.month_5); 6 -> stringResource(Res.string.month_6)
-        7 -> stringResource(Res.string.month_7); 8 -> stringResource(Res.string.month_8)
-        9 -> stringResource(Res.string.month_9); 10 -> stringResource(Res.string.month_10)
-        11 -> stringResource(Res.string.month_11); 12 -> stringResource(Res.string.month_12)
+        1 -> "Enero"; 2 -> "Febrero"; 3 -> "Marzo"; 4 -> "Abril"
+        5 -> "Mayo"; 6 -> "Junio"; 7 -> "Julio"; 8 -> "Agosto"
+        9 -> "Septiembre"; 10 -> "Octubre"; 11 -> "Noviembre"; 12 -> "Diciembre"
         else -> ""
-    }
-}
-
-@Composable
-fun DiaryScreen(navController: NavController) {
-    val today = remember { Clock.System.todayIn(TimeZone.currentSystemDefault()) }
-    var currentYear by remember { mutableStateOf(today.year) }
-    var currentMonth by remember { mutableStateOf(today.monthNumber) }
-    var selectedDate by remember { mutableStateOf(today) }
-
-    val daysInMonth = getDaysInMonth(currentMonth, currentYear)
-    val firstDayOfWeek = getFirstDayOfWeek(currentMonth, currentYear)
-
-    // Textos para datos de ejemplo
-    val irrigationTitle = stringResource(Res.string.diary_irrigation_title)
-    val irrigationDesc = stringResource(Res.string.diary_irrigation_desc)
-    val reviewTitle = stringResource(Res.string.diary_review_title)
-    val reviewDesc = stringResource(Res.string.diary_review_desc)
-
-    // Lista de tareas (Diario)
-    var allTasks by remember(irrigationTitle, irrigationDesc, reviewTitle, reviewDesc) {
-        mutableStateOf(listOf(
-            DiaryTask("1", irrigationTitle, "08:00 AM", irrigationDesc, "Invernadero", today),
-            DiaryTask("2", "Poda Tomates", "08:30 AM", "Quitar chupones", "Invernadero", today),
-            DiaryTask("3", "Fertilizar", "10:00 AM", "Abono líquido", "Terraza", today),
-            DiaryTask("4", reviewTitle, "10:00 AM", reviewDesc, "Cama Alta", today.plus(5, DateTimeUnit.DAY))
-        ))
-    }
-
-    var showDeleteDialog by remember { mutableStateOf(false) }
-    var taskToDelete by remember { mutableStateOf<DiaryTask?>(null) }
-
-    // --- FILTRADO POR DÍA SELECCIONADO Y AGRUPADO POR JARDINERA ---
-    val tasksForDay = allTasks.filter { it.date == selectedDate }
-    val groupedTasks = tasksForDay.groupBy { it.jardineraName }
-
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    // Navegamos al formulario pasando la fecha seleccionada
-                    val dateMillis = selectedDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
-                    navController.navigate(AppScreens.createAddDiaryRoute(dateMillis))
-                },
-                containerColor = GreenPrimary,
-                contentColor = Color.White
-            ) { Icon(Icons.Filled.Edit, null) }
-        }
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(20.dp)) {
-
-            // --- HEADER CALENDARIO (MES EN ESPAÑOL) ---
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(bottom = 20.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = {
-                    val newDate = LocalDate(currentYear, currentMonth, 1).minus(1, DateTimeUnit.MONTH)
-                    currentMonth = newDate.monthNumber; currentYear = newDate.year
-                }) { Icon(Icons.Filled.ChevronLeft, null) }
-
-                // Uso de getMonthNameResource para asegurar español
-                Text("${getMonthNameResource(currentMonth)} $currentYear", fontSize = 20.sp, fontWeight = FontWeight.Bold)
-
-                IconButton(onClick = {
-                    val newDate = LocalDate(currentYear, currentMonth, 1).plus(1, DateTimeUnit.MONTH)
-                    currentMonth = newDate.monthNumber; currentYear = newDate.year
-                }) { Icon(Icons.Filled.ChevronRight, null) }
-            }
-
-            // GRID CALENDARIO
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(7),
-                modifier = Modifier.height(260.dp), // Ajustado para evitar cortes
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(firstDayOfWeek) { Spacer(Modifier) }
-                items(daysInMonth) { index ->
-                    val dayNum = index + 1
-                    val dateOfCell = LocalDate(currentYear, currentMonth, dayNum)
-                    val isSelected = (dateOfCell == selectedDate)
-                    val isToday = (dateOfCell == today)
-
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier.aspectRatio(1f).clip(CircleShape)
-                            .background(when { isSelected -> GreenPrimary; isToday -> MaterialTheme.colorScheme.surfaceVariant; else -> Color.Transparent })
-                            .clickable { selectedDate = dateOfCell }
-                    ) {
-                        Text("$dayNum", color = if (isSelected) Color.White else MaterialTheme.colorScheme.onBackground, fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(20.dp))
-            // Texto dinámico con la fecha
-            Text("${stringResource(Res.string.tasks_for)} ${selectedDate.dayOfMonth} ${stringResource(Res.string.of)} ${getMonthNameResource(selectedDate.monthNumber)}", fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(10.dp))
-
-            // --- LISTA DE TAREAS AGRUPADAS POR JARDINERA ---
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                if (groupedTasks.isEmpty()) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
-                            Text(stringResource(Res.string.no_entries), color = MaterialTheme.colorScheme.secondary)
-                        }
-                    }
-                } else {
-                    groupedTasks.forEach { (jardinera, tasks) ->
-                        item {
-                            Text(
-                                text = jardinera,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = GreenPrimary,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
-                            )
-                        }
-                        items(tasks) { task ->
-                            DiaryEntryCard(
-                                task = task,
-                                onEdit = {
-                                    val dateMillis = task.date.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
-                                    navController.navigate(AppScreens.createAddDiaryRoute(dateMillis))
-                                },
-                                onDelete = {
-                                    taskToDelete = task
-                                    showDeleteDialog = true
-                                }
-                            )
-                            Spacer(Modifier.height(8.dp))
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // --- DIÁLOGO DE BORRADO ---
-    if (showDeleteDialog && taskToDelete != null) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            title = { Text(stringResource(Res.string.menu_delete)) },
-            text = { Text(stringResource(Res.string.delete_confirm_diary)+"'${taskToDelete?.title}'?") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        allTasks = allTasks.filter { it.id != taskToDelete!!.id }
-                        showDeleteDialog = false
-                        taskToDelete = null
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = RedDanger)
-                ) { Text(stringResource(Res.string.dialog_confirm)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) }
-            }
-        )
-    }
-}
-
-@Composable
-fun DiaryEntryCard(task: DiaryTask, onEdit: () -> Unit, onDelete: () -> Unit) {
-    var showMenu by remember { mutableStateOf(false) }
-
-    HuertaCard {
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column(Modifier.weight(1f)) {
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Text(task.title, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
-
-                    // --- MENÚ DE 3 PUNTOS FUNCIONAL ---
-                    Box {
-                        IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Filled.MoreVert, null, tint = MaterialTheme.colorScheme.onSurface.copy(alpha=0.5f))
-                        }
-
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.menu_edit)) },
-                                leadingIcon = { Icon(Icons.Filled.Edit, null) },
-                                onClick = { showMenu = false; onEdit() }
-                            )
-                            DropdownMenuItem(
-                                text = { Text(stringResource(Res.string.menu_delete), color = RedDanger) },
-                                leadingIcon = { Icon(Icons.Filled.Delete, null, tint = RedDanger) },
-                                onClick = { showMenu = false; onDelete() }
-                            )
-                        }
-                    }
-                }
-                Text(task.time, fontSize = 12.sp, color = GreenPrimary)
-                Spacer(Modifier.height(5.dp))
-                Text(task.description, color = MaterialTheme.colorScheme.secondary, fontSize = 14.sp)
-            }
-        }
     }
 }
