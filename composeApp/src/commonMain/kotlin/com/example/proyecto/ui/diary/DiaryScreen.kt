@@ -8,6 +8,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -34,97 +35,38 @@ import org.koin.compose.viewmodel.koinViewModel
 
 @Composable
 fun DiaryScreen(navController: NavController, viewModel: GardenViewModel = koinViewModel()) {
-    // --- DATOS REALES ---
     val historial by viewModel.historialGeneral.collectAsState()
-
-    // --- ESTADO DEL CALENDARIO (RESTAURADO) ---
     val today = Clock.System.todayIn(TimeZone.currentSystemDefault())
     var selectedDate by remember { mutableStateOf(today) }
     var currentMonth by remember { mutableStateOf(today.monthNumber) }
     var currentYear by remember { mutableStateOf(today.year) }
 
-    // Filtramos las entradas de la DB para el día seleccionado
     val entriesForSelectedDay = historial.filter {
         val date = Instant.fromEpochMilliseconds(it.fecha).toLocalDateTime(TimeZone.currentSystemDefault()).date
         date == selectedDate
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-        // Título
-        Text(
-            text = stringResource(Res.string.diary_title),
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold
-        )
-
+        Text(text = stringResource(Res.string.diary_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(20.dp))
 
-        // --- CALENDARIO (DISEÑO ORIGINAL) ---
+        // CALENDARIO
         HuertaCard {
             Column {
-                // Cabecera mes/año
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(onClick = {
-                        if (currentMonth == 1) { currentMonth = 12; currentYear-- } else currentMonth--
-                    }) { Icon(Icons.Default.ChevronLeft, null) }
-
-                    Text(
-                        text = "${getMonthNameResource(currentMonth)} $currentYear",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-
-                    IconButton(onClick = {
-                        if (currentMonth == 12) { currentMonth = 1; currentYear++ } else currentMonth++
-                    }) { Icon(Icons.Default.ChevronRight, null) }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { if (currentMonth == 1) { currentMonth = 12; currentYear-- } else currentMonth-- }) { Icon(Icons.Default.ChevronLeft, null) }
+                    Text(text = "${getMonthNameResource(currentMonth)} $currentYear", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    IconButton(onClick = { if (currentMonth == 12) { currentMonth = 1; currentYear++ } else currentMonth++ }) { Icon(Icons.Default.ChevronRight, null) }
                 }
-
-                Spacer(Modifier.height(10.dp))
-
-                // Días de la semana
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceAround) {
-                    listOf("L", "M", "X", "J", "V", "S", "D").forEach { day ->
-                        Text(day, fontSize = 12.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
-                    }
-                }
-
-                // Cuadrícula de días
                 val daysInMonth = getDaysInMonth(currentMonth, currentYear)
                 val firstDay = getFirstDayOfWeek(currentMonth, currentYear)
-
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(7),
-                    modifier = Modifier.height(220.dp).padding(top = 10.dp)
-                ) {
-                    // Espacios vacíos
+                LazyVerticalGrid(columns = GridCells.Fixed(7), modifier = Modifier.height(220.dp).padding(top = 10.dp)) {
                     items(firstDay) { Spacer(Modifier.fillMaxSize()) }
-
-                    // Días reales
                     items(daysInMonth) { dayIndex ->
                         val day = dayIndex + 1
-                        val isSelected = selectedDate.dayOfMonth == day &&
-                                selectedDate.monthNumber == currentMonth &&
-                                selectedDate.year == currentYear
-
-                        Box(
-                            modifier = Modifier
-                                .aspectRatio(1f)
-                                .padding(4.dp)
-                                .clip(CircleShape)
-                                .background(if (isSelected) GreenPrimary else Color.Transparent)
-                                .clickable { selectedDate = LocalDate(currentYear, currentMonth, day) },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = day.toString(),
-                                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
-                                fontSize = 14.sp,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                            )
+                        val isSelected = selectedDate.dayOfMonth == day && selectedDate.monthNumber == currentMonth && selectedDate.year == currentYear
+                        Box(modifier = Modifier.aspectRatio(1f).padding(4.dp).clip(CircleShape).background(if (isSelected) GreenPrimary else Color.Transparent).clickable { selectedDate = LocalDate(currentYear, currentMonth, day) }, contentAlignment = Alignment.Center) {
+                            Text(text = day.toString(), color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface, fontSize = 14.sp)
                         }
                     }
                 }
@@ -133,45 +75,43 @@ fun DiaryScreen(navController: NavController, viewModel: GardenViewModel = koinV
 
         Spacer(Modifier.height(25.dp))
 
-        // --- LISTA DE TAREAS (DISEÑO ORIGINAL CON DATOS REALES) ---
+        // CABECERA LISTA
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = stringResource(Res.string.section_tasks),
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
-            )
+            Text(text = stringResource(Res.string.section_tasks), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             TextButton(onClick = { navController.navigate(AppScreens.createAddDiaryRoute(selectedDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds())) }) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
-                    Text(stringResource(Res.string.menu_add))
-                }
+                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp)); Text(stringResource(Res.string.menu_add))
             }
         }
 
+        // LISTA COMPACTA CON CLIC HABILITADO
         if (entriesForSelectedDay.isEmpty()) {
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Text("No hay tareas para este día.", color = Color.Gray)
-            }
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text("No hay tareas para este día.", color = Color.Gray) }
         } else {
-            LazyColumn(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 items(entriesForSelectedDay) { entrada ->
-                    // Reutilizamos el TimelineItem para mantener coherencia visual
-                    TimelineItem(
-                        title = entrada.tipoAccion,
-                        desc = entrada.descripcion,
-                        time = "Registrado",
-                        icon = when(entrada.tipoAccion) {
-                            "SIEMBRA" -> Icons.Default.Eco
-                            "Riego" -> Icons.Default.WaterDrop
-                            "CREACION" -> Icons.Default.AddHome
-                            else -> Icons.Default.Agriculture
-                        },
-                        color = GreenPrimary,
-                        showLine = false // En la lista general no hace falta la línea
-                    )
+                    Card(
+                        modifier = Modifier.fillMaxWidth().clickable { navController.navigate(AppScreens.createDiaryDetailRoute(entrada.id)) },
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    ) {
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = when(entrada.tipoAccion) {
+                                    "SIEMBRA" -> Icons.Default.Eco
+                                    "Riego" -> Icons.Default.WaterDrop
+                                    else -> Icons.Default.Agriculture
+                                },
+                                contentDescription = null,
+                                tint = GreenPrimary,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text(entrada.tipoAccion, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                                Text(entrada.descripcion, fontSize = 12.sp, maxLines = 1, color = Color.Gray)
+                            }
+                        }
+                    }
                 }
             }
         }

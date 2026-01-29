@@ -71,4 +71,26 @@ class GardenViewModel(private val repository: JardineraRepository) : ViewModel()
             }
         }
     }
+    fun eliminarEntradaDiario(id: Long) {
+        viewModelScope.launch {
+            repository.eliminarEntradaDiario(id)
+        }
+    }
+
+    suspend fun getEntradaDiarioById(id: Long): EntradaDiarioEntity? {
+        return repository.getEntradaDiarioById(id)
+    }
+
+    // Actualizado para permitir edición (pasando el ID)
+    fun guardarEntradaDiario(bancalId: Long, tipo: String, desc: String, fecha: Long, id: Long = 0) {
+        viewModelScope.launch {
+            repository.insertarEntradaDiario(EntradaDiarioEntity(
+                id = id, // Si es > 0, Room sobreescribe el existente
+                bancalId = bancalId,
+                tipoAccion = tipo,
+                descripcion = desc,
+                fecha = fecha
+            ))
+        }
+    }
 }

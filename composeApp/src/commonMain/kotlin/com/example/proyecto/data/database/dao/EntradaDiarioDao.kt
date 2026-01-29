@@ -16,4 +16,9 @@ interface EntradaDiarioDao {
     // NUEVO: Para el Diario General
     @Query("SELECT * FROM entradas_diario ORDER BY fecha DESC")
     fun getAllEntradas(): Flow<List<EntradaDiarioEntity>>
+
+    @Query("SELECT * FROM entradas_diario WHERE id = :id")
+    suspend fun getEntradaById(id: Long): EntradaDiarioEntity?
+    @Query("DELETE FROM entradas_diario WHERE id = :id")
+    suspend fun deleteById(id: Long)
 }

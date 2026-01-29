@@ -76,4 +76,7 @@ class JardineraRepository(private val db: AppDatabase, private val api: OpenFarm
     suspend fun getProductoById(id: Long) = productoDao.getProductoById(id)
 
     suspend fun insertarEntradaDiario(entrada: EntradaDiarioEntity) = diarioDao.insertEntrada(entrada)
+    suspend fun getEntradaDiarioById(id: Long): EntradaDiarioEntity? = diarioDao.getEntradaById(id)
+    suspend fun eliminarEntradaDiario(id: Long) {
+        diarioDao.deleteById(id)}
 }

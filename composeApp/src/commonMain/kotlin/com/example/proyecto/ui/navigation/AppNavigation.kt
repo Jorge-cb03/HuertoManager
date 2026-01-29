@@ -28,6 +28,7 @@ import com.example.proyecto.ui.diary.AddDiaryEntryScreen
 import com.example.proyecto.ui.profile.ProfileScreen
 import com.example.proyecto.ui.profile.AboutScreen
 import com.example.proyecto.ui.alerts.AlertsScreen
+import com.example.proyecto.ui.diary.DiaryDetailScreen
 
 object AppScreens {
     // Rutas simples
@@ -42,16 +43,17 @@ object AppScreens {
     const val AddProduct = "add_product"
 
     // Rutas con argumentos (FIX: Soporte para índice de jardinera)
+    const val DiaryDetail = "diary_detail/{taskId}"
+    fun createDiaryDetailRoute(taskId: Long) = "diary_detail/$taskId"
     const val Garden = "garden/{gardenIndex}"
     fun createGardenRoute(index: Int) = "garden/$index"
-
     const val ProductDetail = "product_detail/{productId}"
     fun createProductDetailRoute(productId: String) = "product_detail/$productId"
 
     const val GardenSlotDetail = "garden_slot_detail/{slotName}"
     fun createSlotDetailRoute(slotName: String) = "garden_slot_detail/$slotName"
 
-    const val AddDiaryEntry = "add_diary_entry/{dateMillis}"
+    const val AddDiaryEntry = "add_diary_entry/{dateMillis}?taskId={taskId}&title={title}&desc={desc}"
     fun createAddDiaryRoute(dateMillis: Long) = "add_diary_entry/$dateMillis"
 }
 
@@ -119,13 +121,29 @@ fun AppNavigation(
             // 8. AÑADIR ENTRADA DIARIO (Corregido sin parámetros fantasma)
             composable(
                 route = AppScreens.AddDiaryEntry,
-                arguments = listOf(navArgument("dateMillis") { type = NavType.LongType })
+                arguments = listOf(
+                    navArgument("dateMillis") { type = NavType.LongType },
+                    navArgument("taskId") { nullable = true; defaultValue = null },
+                    navArgument("title") { nullable = true; defaultValue = null },
+                    navArgument("desc") { nullable = true; defaultValue = null }
+                )
             ) { backStackEntry ->
-                val dateMillis = backStackEntry.arguments?.getLong("dateMillis") ?: 0L
                 AddDiaryEntryScreen(
                     navController = navController,
-                    initialDateMillis = dateMillis
+                    initialDateMillis = backStackEntry.arguments?.getLong("dateMillis") ?: 0L,
+                    taskId = backStackEntry.arguments?.getString("taskId"),
+                    initialTitle = backStackEntry.arguments?.getString("title"),
+                    initialDesc = backStackEntry.arguments?.getString("desc")
                 )
+            }
+
+            // 8. DETALLE DIARIO
+            composable(
+                route = AppScreens.DiaryDetail, // Debe ser "diary_detail/{taskId}"
+                arguments = listOf(navArgument("taskId") { type = NavType.LongType })
+            ) { backStackEntry ->
+                val taskId = backStackEntry.arguments?.getLong("taskId") ?: 0L
+                DiaryDetailScreen(navController, taskId)
             }
 
             composable(AppScreens.Products) { ProductsScreen(navController) }

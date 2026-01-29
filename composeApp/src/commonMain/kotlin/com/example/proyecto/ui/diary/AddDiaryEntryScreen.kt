@@ -260,13 +260,13 @@ fun AddDiaryEntryScreen(
                     if (title.isNotBlank() && selectedBancalIds.isNotEmpty()) {
                         val finalDesc = if (selectedType == irrigationTypeStr) "$title - ${waterAmount.toInt()}L" else description
 
-                        // Guardamos una entrada por cada bancal seleccionado
-                        selectedBancalIds.forEach { id ->
+                        selectedBancalIds.forEach { bId ->
                             viewModel.guardarEntradaDiario(
-                                bancalId = id,
+                                bancalId = bId,
                                 tipo = selectedType,
                                 desc = finalDesc,
-                                fecha = selectedDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
+                                fecha = selectedDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
+                                id = taskId?.toLongOrNull() ?: 0L // FIX: Pasa el ID si existe para actualizar
                             )
                         }
                         showSuccessDialog = true
@@ -276,7 +276,7 @@ fun AddDiaryEntryScreen(
                 enabled = selectedBancalIds.isNotEmpty() && title.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
             ) {
-                Text("Registrar en ${selectedBancalIds.size} bancales", fontWeight = FontWeight.Bold)
+                Text(if(isEditMode) "Actualizar Tarea" else "Registrar en ${selectedBancalIds.size} bancales", fontWeight = FontWeight.Bold)
             }
         }
     }
