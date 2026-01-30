@@ -1,34 +1,27 @@
 package com.example.proyecto.di
 
-import com.example.proyecto.data.api.OpenFarmService
-import com.example.proyecto.data.database.DatabaseProvider
-import com.example.proyecto.data.repository.JardineraRepository
-import com.example.proyecto.ui.garden.GardenViewModel
 import com.example.proyecto.data.database.AppDatabase
 import com.example.proyecto.data.database.getDatabaseBuilder
-import org.koin.dsl.module
+import com.example.proyecto.data.repository.AuthRepository
+import com.example.proyecto.data.repository.JardineraRepository
+import com.example.proyecto.ui.garden.GardenViewModel
 import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.module
 
 val appModule = module {
-    single<AppDatabase> {
-        getDatabaseBuilder().build()
-    }
+    single<AppDatabase> { getDatabaseBuilder().build() }
 
-    // 1. Instancia única de la base de datos
-    single { DatabaseProvider.getDatabase() }
-
-    // 2. DAOs
     single { get<AppDatabase>().jardineraDao() }
     single { get<AppDatabase>().bancalDao() }
     single { get<AppDatabase>().productoDao() }
     single { get<AppDatabase>().entradaDiarioDao() }
+    // AlertDao es accesible a través de AppDatabase internamente, no hace falta exponerlo si no quieres,
+    // pero el Repo ya lo usa a través de 'db'.
 
-    // 3. API Service
-    single { OpenFarmService() }
+    // Repositorio autónomo (sin API)
+    single { JardineraRepository(db = get<AppDatabase>()) }
 
-    // 4. Repositorio
-    single { JardineraRepository(get(), get()) }
+    single { AuthRepository() } // Añadimos el repo de Firebase
 
-    // 5. ViewModel (Cambiado para máxima compatibilidad)
-    viewModel { GardenViewModel(get()) }
+    viewModel { GardenViewModel(repository = get<JardineraRepository>()) }
 }

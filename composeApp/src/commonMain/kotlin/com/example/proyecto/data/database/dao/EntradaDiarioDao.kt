@@ -9,11 +9,12 @@ interface EntradaDiarioDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEntrada(entrada: EntradaDiarioEntity)
 
-    // Para el detalle del bancal (ya lo tienes)
     @Query("SELECT * FROM entradas_diario WHERE bancalId = :bancalId ORDER BY fecha DESC")
     fun getDiarioByBancal(bancalId: Long): Flow<List<EntradaDiarioEntity>>
 
-    // NUEVO: Para el Diario General
     @Query("SELECT * FROM entradas_diario ORDER BY fecha DESC")
     fun getAllEntradas(): Flow<List<EntradaDiarioEntity>>
+
+    @Query("SELECT * FROM entradas_diario WHERE descripcion LIKE '%' || :query || '%' OR tipoAccion = :tipo ORDER BY fecha DESC")
+    fun buscarEntradas(query: String, tipo: String): Flow<List<EntradaDiarioEntity>>
 }

@@ -12,5 +12,7 @@ actual fun getDatabaseBuilder(): RoomDatabase.Builder<AppDatabase> {
     return Room.databaseBuilder<AppDatabase>(
         context = appContext,
         name = dbFile.absolutePath
-    ).setDriver(AndroidSQLiteDriver()) // Importante para el Database Inspector
+    )
+        .fallbackToDestructiveMigration(true) // <--- ESTO EVITA EL CRASH AL CAMBIAR DE VERSIÓN
+        .setDriver(AndroidSQLiteDriver())
 }

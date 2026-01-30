@@ -9,6 +9,14 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.kotlinSerialization)
+    id("com.google.gms.google-services")
+}
+
+// 1. FORZAMOS LOS REPOSITORIOS AQUÍ PARA EVITAR ERRORES DE RESOLUCIÓN
+repositories {
+    google()
+    mavenCentral()
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
 }
 
 room {
@@ -21,7 +29,7 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
+
     listOf(
         iosArm64(),
         iosSimulatorArm64()
@@ -31,7 +39,7 @@ kotlin {
             isStatic = true
         }
     }
-    
+
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
@@ -49,22 +57,29 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(libs.kotlinx.datetime)
             implementation(libs.navigation.compose)
+
             // Room
             implementation(libs.room.runtime)
             implementation(libs.sqlite.bundled)
+
             // Koin
             implementation(libs.koin.core)
             implementation(libs.koin.compose)
             implementation(libs.koin.compose.viewmodel)
+
             // Ktor
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)
             implementation(libs.ktor.serialization.json)
-            implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.logging)
-            // Coil
-            // implementation(libs.coil.compose)
-            // implementation(libs.coil.network.ktor)
+
+            // --- COIL 3 (KMP) ---
+            // Usamos la versión alpha06 que es muy estable para KMP y suele resolverse sin problemas
+            implementation("io.coil-kt.coil3:coil-compose:3.0.0-alpha06")
+            implementation("io.coil-kt.coil3:coil-network-ktor:3.0.0-alpha06")
+            // Firebase Multiplatform SDK
+            implementation("dev.gitlive:firebase-auth:1.13.0")
+            implementation("dev.gitlive:firebase-firestore:1.13.0")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -106,4 +121,3 @@ dependencies {
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
 }
-

@@ -41,7 +41,7 @@ object AppScreens {
     const val About = "about"
     const val AddProduct = "add_product"
 
-    // Rutas con argumentos (FIX: Soporte para índice de jardinera)
+    // Rutas con argumentos
     const val Garden = "garden/{gardenIndex}"
     fun createGardenRoute(index: Int) = "garden/$index"
 
@@ -54,8 +54,6 @@ object AppScreens {
     const val AddDiaryEntry = "add_diary_entry/{dateMillis}"
     fun createAddDiaryRoute(dateMillis: Long) = "add_diary_entry/$dateMillis"
 }
-
-// ... (manten los imports igual)
 
 @Composable
 fun AppNavigation(
@@ -101,8 +99,9 @@ fun AppNavigation(
                 route = AppScreens.Garden,
                 arguments = listOf(navArgument("gardenIndex") { type = NavType.IntType })
             ) { backStackEntry ->
+                // Obtenemos el índice, pero GardenScreen aún no lo usa, así que llamamos a la pantalla sin argumentos extra.
                 val index = backStackEntry.arguments?.getInt("gardenIndex") ?: 0
-                GardenScreen(navController = navController, initialGardenIndex = index)
+                GardenScreen(navController = navController) // CORREGIDO: Eliminado initialGardenIndex
             }
 
             // 6. DETALLE HUECO (ID Real)
@@ -116,7 +115,7 @@ fun AppNavigation(
 
             composable(AppScreens.Diary) { DiaryScreen(navController) }
 
-            // 8. AÑADIR ENTRADA DIARIO (Corregido sin parámetros fantasma)
+            // 8. AÑADIR ENTRADA DIARIO
             composable(
                 route = AppScreens.AddDiaryEntry,
                 arguments = listOf(navArgument("dateMillis") { type = NavType.LongType })
@@ -130,7 +129,7 @@ fun AppNavigation(
 
             composable(AppScreens.Products) { ProductsScreen(navController) }
 
-            // 10. AÑADIR PRODUCTO (Limpio)
+            // 10. AÑADIR PRODUCTO
             composable(AppScreens.AddProduct) { AddProductScreen(navController = navController) }
 
             // 11. DETALLE PRODUCTO

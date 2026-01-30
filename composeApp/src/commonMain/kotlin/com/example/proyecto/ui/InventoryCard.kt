@@ -1,72 +1,83 @@
 package com.example.proyecto.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Eco
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.proyecto.domain.model.InventoryItem
-import com.example.proyecto.domain.model.ProductType
-import com.example.proyecto.ui.theme.GreenPrimary
-import com.example.proyecto.ui.theme.RedDanger
+import coil3.compose.AsyncImage
+// CAMBIO IMPORTANTE: Importamos desde repository
+import com.example.proyecto.data.repository.PerenualSpecies
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InventoryCard(
-    item: InventoryItem,
-    onClick: () -> Unit,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
+    item: PerenualSpecies,
+    onAddClick: () -> Unit
 ) {
-    ElevatedCard(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(12.dp)
+                .fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Icono según tipo
-            Surface(
-                shape = MaterialTheme.shapes.medium,
-                color = GreenPrimary.copy(alpha = 0.1f),
-                modifier = Modifier.size(48.dp)
+            // IMAGEN (Usamos tu catálogo local garantizado)
+            val imageUrl = item.defaultImage?.regularUrl
+
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(60.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.LightGray),
+                contentScale = ContentScale.Crop,
+                placeholder = rememberVectorPainter(Icons.Default.Eco),
+                error = rememberVectorPainter(Icons.Default.Eco)
+            )
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.commonName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                if (item.scientificName.isNotEmpty()) {
+                    Text(
+                        text = item.scientificName.first(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                    )
+                }
+            }
+
+            IconButton(
+                onClick = onAddClick,
+                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary)
             ) {
-                Box(contentAlignment = Alignment.Center) {
-                    val icon = when (item.type) {
-                        ProductType.SEED -> Icons.Default.Spa
-                        ProductType.TOOL -> Icons.Default.Build
-                        ProductType.CHEMICAL -> Icons.Default.Science
-                        else -> Icons.Default.Inventory2
-                    }
-                    Icon(icon, null, tint = GreenPrimary)
-                }
-            }
-
-            Spacer(Modifier.width(16.dp))
-
-            Column(Modifier.weight(1f)) {
-                Text(item.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(item.description ?: "", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-            }
-
-            Column(horizontalAlignment = Alignment.End) {
-                Text(item.quantity, fontWeight = FontWeight.ExtraBold, color = GreenPrimary)
-                Row {
-                    IconButton(onClick = onEdit) {
-                        Icon(Icons.Default.Edit, null, modifier = Modifier.size(20.dp), tint = Color.Gray)
-                    }
-                    IconButton(onClick = onDelete) {
-                        Icon(Icons.Default.Delete, null, modifier = Modifier.size(20.dp), tint = RedDanger)
-                    }
-                }
+                Icon(Icons.Default.Add, contentDescription = "Añadir")
             }
         }
     }

@@ -1,4 +1,4 @@
-rootProject.name = "Proyecto"
+rootProject.name = "HuertoManager"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 
 pluginManagement {
@@ -18,5 +18,4 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "HuertoManager"
 include(":composeApp")

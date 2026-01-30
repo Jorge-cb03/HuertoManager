@@ -1,0 +1,29 @@
+package com.example.proyecto.data.repository
+
+import dev.gitlive.firebase.Firebase
+import dev.gitlive.firebase.auth.auth
+import dev.gitlive.firebase.auth.GoogleAuthProvider
+
+class AuthRepository {
+    private val auth = Firebase.auth
+
+    suspend fun login(email: String, pass: String) {
+        auth.signInWithEmailAndPassword(email, pass)
+    }
+
+    suspend fun register(email: String, pass: String) {
+        auth.createUserWithEmailAndPassword(email, pass)
+    }
+
+    // Nuevo método para autenticar con el token obtenido de Android/iOS
+    suspend fun signInWithGoogle(idToken: String) {
+        val credential = GoogleAuthProvider.credential(idToken, null)
+        auth.signInWithCredential(credential)
+    }
+
+    fun getCurrentUser() = auth.currentUser
+
+    fun logout() {
+        auth.signOut()
+    }
+}
