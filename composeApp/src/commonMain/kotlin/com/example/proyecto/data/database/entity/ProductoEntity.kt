@@ -7,7 +7,10 @@ import androidx.room.PrimaryKey
 data class ProductoEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val nombre: String,
-    val categoria: String, // SEMILLA, HERRAMIENTA, QUIMICO
-    val stock: Int,
-    val openFarmSlug: String? = null // Para vincular semillas con la API
+    val categoria: String,
+    val stock: Double,
+    val perenualId: Int? = null, // VUELVE A SER INT
+    val imagenUrl: String? = null,
+    val nombreCientifico: String? = null,
+    val notasCultivo: String? = null
 )

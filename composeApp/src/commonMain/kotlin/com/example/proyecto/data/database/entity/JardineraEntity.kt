@@ -8,5 +8,6 @@ data class JardineraEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val nombre: String,
     val filas: Int = 4,
-    val columnas: Int = 2
+    val columnas: Int = 2,
+    val estaArchivada: Boolean = false
 )

@@ -22,7 +22,7 @@
             </intent-filter>
         </activity>
         <receiver
-            android:name=".util.NotificationReceiver"
+            android:name="com.example.proyecto.util.NotificationReceiver"
             android:enabled="true"
             android:exported="false" />
     </application>

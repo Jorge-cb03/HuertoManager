@@ -28,7 +28,6 @@ import com.example.proyecto.ui.diary.AddDiaryEntryScreen
 import com.example.proyecto.ui.profile.ProfileScreen
 import com.example.proyecto.ui.profile.AboutScreen
 import com.example.proyecto.ui.alerts.AlertsScreen
-import com.example.proyecto.ui.diary.DiaryDetailScreen
 
 object AppScreens {
     // Rutas simples
@@ -42,22 +41,19 @@ object AppScreens {
     const val About = "about"
     const val AddProduct = "add_product"
 
-    // Rutas con argumentos (FIX: Soporte para índice de jardinera)
-    const val DiaryDetail = "diary_detail/{taskId}"
-    fun createDiaryDetailRoute(taskId: Long) = "diary_detail/$taskId"
+    // Rutas con argumentos
     const val Garden = "garden/{gardenIndex}"
     fun createGardenRoute(index: Int) = "garden/$index"
+
     const val ProductDetail = "product_detail/{productId}"
     fun createProductDetailRoute(productId: String) = "product_detail/$productId"
 
     const val GardenSlotDetail = "garden_slot_detail/{slotName}"
     fun createSlotDetailRoute(slotName: String) = "garden_slot_detail/$slotName"
 
-    const val AddDiaryEntry = "add_diary_entry/{dateMillis}?taskId={taskId}&title={title}&desc={desc}"
+    const val AddDiaryEntry = "add_diary_entry/{dateMillis}"
     fun createAddDiaryRoute(dateMillis: Long) = "add_diary_entry/$dateMillis"
 }
-
-// ... (manten los imports igual)
 
 @Composable
 fun AppNavigation(
@@ -103,8 +99,9 @@ fun AppNavigation(
                 route = AppScreens.Garden,
                 arguments = listOf(navArgument("gardenIndex") { type = NavType.IntType })
             ) { backStackEntry ->
+                // Obtenemos el índice, pero GardenScreen aún no lo usa, así que llamamos a la pantalla sin argumentos extra.
                 val index = backStackEntry.arguments?.getInt("gardenIndex") ?: 0
-                GardenScreen(navController = navController, initialGardenIndex = index)
+                GardenScreen(navController = navController) // CORREGIDO: Eliminado initialGardenIndex
             }
 
             // 6. DETALLE HUECO (ID Real)
@@ -118,37 +115,21 @@ fun AppNavigation(
 
             composable(AppScreens.Diary) { DiaryScreen(navController) }
 
-            // 8. AÑADIR ENTRADA DIARIO (Corregido sin parámetros fantasma)
+            // 8. AÑADIR ENTRADA DIARIO
             composable(
                 route = AppScreens.AddDiaryEntry,
-                arguments = listOf(
-                    navArgument("dateMillis") { type = NavType.LongType },
-                    navArgument("taskId") { nullable = true; defaultValue = null },
-                    navArgument("title") { nullable = true; defaultValue = null },
-                    navArgument("desc") { nullable = true; defaultValue = null }
-                )
+                arguments = listOf(navArgument("dateMillis") { type = NavType.LongType })
             ) { backStackEntry ->
+                val dateMillis = backStackEntry.arguments?.getLong("dateMillis") ?: 0L
                 AddDiaryEntryScreen(
                     navController = navController,
-                    initialDateMillis = backStackEntry.arguments?.getLong("dateMillis") ?: 0L,
-                    taskId = backStackEntry.arguments?.getString("taskId"),
-                    initialTitle = backStackEntry.arguments?.getString("title"),
-                    initialDesc = backStackEntry.arguments?.getString("desc")
+                    initialDateMillis = dateMillis
                 )
-            }
-
-            // 8. DETALLE DIARIO
-            composable(
-                route = AppScreens.DiaryDetail, // Debe ser "diary_detail/{taskId}"
-                arguments = listOf(navArgument("taskId") { type = NavType.LongType })
-            ) { backStackEntry ->
-                val taskId = backStackEntry.arguments?.getLong("taskId") ?: 0L
-                DiaryDetailScreen(navController, taskId)
             }
 
             composable(AppScreens.Products) { ProductsScreen(navController) }
 
-            // 10. AÑADIR PRODUCTO (Limpio)
+            // 10. AÑADIR PRODUCTO
             composable(AppScreens.AddProduct) { AddProductScreen(navController = navController) }
 
             // 11. DETALLE PRODUCTO

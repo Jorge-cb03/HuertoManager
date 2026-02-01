@@ -5,12 +5,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+// Mantenemos estos imports por si acaso, pero ya no usaremos 'by' para el flow
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,28 +23,56 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.proyecto.ui.HuertaCard
 import com.example.proyecto.ui.HuertaInput
+import com.example.proyecto.ui.garden.GardenViewModel
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
 import com.example.proyecto.util.NotificationManager
+// Importamos la entidad explícitamente
+import com.example.proyecto.data.database.entity.AlertEntity
 import kotlinx.datetime.*
 import org.jetbrains.compose.resources.stringResource
 import huertomanager.composeapp.generated.resources.*
+import org.koin.compose.viewmodel.koinViewModel
 
 @Immutable
 data class AlertUiModel(
-    val id: Long = Clock.System.now().toEpochMilliseconds(),
-    var title: String,
-    var description: String,
-    var dateTime: LocalDateTime,
+    val id: Long,
+    val title: String,
+    val description: String,
+    val dateTime: LocalDateTime,
     val isUrgent: Boolean
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlertsScreen(navController: NavController) {
+fun AlertsScreen(
+    navController: NavController,
+    viewModel: GardenViewModel = koinViewModel()
+) {
+    // Estados locales (estos sí funcionan con 'by' porque son MutableState simples)
     var showAddDialog by remember { mutableStateOf(false) }
     var editingAlert by remember { mutableStateOf<AlertUiModel?>(null) }
-    val alerts = remember { mutableStateListOf<AlertUiModel>() }
+
+    // --- CORRECCIÓN RADICAL DEL ERROR ---
+    // En lugar de usar 'by', recolectamos el estado explícitamente y accedemos a .value
+    // Esto elimina el error de inferencia del compilador.
+    val alertsState = viewModel.alerts.collectAsState()
+    val alertsEntity = alertsState.value
+    // -----------------------------------
+
+    // Mapear Entidad -> UI Model
+    val alerts = remember(alertsEntity) {
+        alertsEntity.map { entity ->
+            AlertUiModel(
+                id = entity.id,
+                title = entity.title,
+                description = entity.description,
+                dateTime = Instant.fromEpochMilliseconds(entity.dateTimeEpochMillis)
+                    .toLocalDateTime(TimeZone.currentSystemDefault()),
+                isUrgent = entity.isUrgent
+            )
+        }
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -61,9 +92,11 @@ fun AlertsScreen(navController: NavController) {
             }
         }
     ) { padding ->
-        // ESPACIADO MEJORADO: Arrangement.spacedBy y contentPadding
         LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(top = 20.dp, bottom = 40.dp)
         ) {
@@ -71,7 +104,7 @@ fun AlertsScreen(navController: NavController) {
                 AlertItemCard(
                     alert = alert,
                     onEdit = { editingAlert = alert },
-                    onDelete = { alerts.remove(alert) }
+                    onDelete = { viewModel.deleteAlert(alert.id) }
                 )
             }
         }
@@ -83,29 +116,27 @@ fun AlertsScreen(navController: NavController) {
             onDismiss = { showAddDialog = false; editingAlert = null },
             onSave = { name, desc, date, hour, minute ->
                 val dt = LocalDateTime(date.year, date.monthNumber, date.dayOfMonth, hour, minute)
+                val epochMillis = dt.toInstant(TimeZone.currentSystemDefault()).toEpochMilliseconds()
 
-                // --- CONVERSIÓN A EPOCH SECONDS PARA EL SISTEMA ---
-                val epochSeconds = dt.toInstant(TimeZone.currentSystemDefault()).epochSeconds
-
-                // --- PROGRAMAR NOTIFICACIÓN REAL ---
                 NotificationManager.scheduleNotification(
                     title = name,
                     message = desc,
-                    epochSeconds = epochSeconds
+                    epochSeconds = epochMillis / 1000
                 )
 
                 if (editingAlert != null) {
-                    val index = alerts.indexOf(editingAlert)
-                    if (index != -1) alerts[index] = editingAlert!!.copy(title = name, description = desc, dateTime = dt)
+                    viewModel.updateAlert(editingAlert!!.id, name, desc, epochMillis)
                 } else {
-                    alerts.add(AlertUiModel(title = name, description = desc, dateTime = dt, isUrgent = false))
+                    viewModel.addAlert(name, desc, epochMillis)
                 }
-                showAddDialog = false; editingAlert = null
+                showAddDialog = false
+                editingAlert = null
             }
         )
     }
 }
 
+// ... (El resto del archivo: AlertItemCard y AlertCreationDialog se mantienen igual)
 @Composable
 fun AlertItemCard(alert: AlertUiModel, onEdit: () -> Unit, onDelete: () -> Unit) {
     var showMenu by remember { mutableStateOf(false) }
@@ -122,9 +153,10 @@ fun AlertItemCard(alert: AlertUiModel, onEdit: () -> Unit, onDelete: () -> Unit)
                 if (alert.description.isNotEmpty()) {
                     Text(alert.description, fontSize = 12.sp, color = MaterialTheme.colorScheme.secondary, maxLines = 1)
                 }
-                Text("${alert.dateTime.dayOfMonth}/${alert.dateTime.monthNumber} - ${alert.dateTime.hour.toString().padStart(2,'0')}:${alert.dateTime.minute.toString().padStart(2,'0')}", fontSize = 11.sp)
+                val hourStr = alert.dateTime.hour.toString().padStart(2, '0')
+                val minStr = alert.dateTime.minute.toString().padStart(2, '0')
+                Text("${alert.dateTime.dayOfMonth}/${alert.dateTime.monthNumber} - $hourStr:$minStr", fontSize = 11.sp)
             }
-            // MENÚ DE 3 PUNTOS
             Box {
                 IconButton(onClick = { showMenu = true }) { Icon(Icons.Default.MoreVert, null) }
                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
@@ -146,25 +178,42 @@ fun AlertItemCard(alert: AlertUiModel, onEdit: () -> Unit, onDelete: () -> Unit)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AlertCreationDialog(initialAlert: AlertUiModel?, onDismiss: () -> Unit, onSave: (String, String, LocalDate, Int, Int) -> Unit) {
+fun AlertCreationDialog(
+    initialAlert: AlertUiModel?,
+    onDismiss: () -> Unit,
+    onSave: (String, String, LocalDate, Int, Int) -> Unit
+) {
     var name by remember { mutableStateOf(initialAlert?.title ?: "") }
     var desc by remember { mutableStateOf(initialAlert?.description ?: "") }
-    var selectedDate by remember { mutableStateOf(initialAlert?.dateTime?.date ?: Clock.System.todayIn(TimeZone.currentSystemDefault())) }
+    var selectedDate by remember {
+        mutableStateOf(initialAlert?.dateTime?.date ?: Clock.System.todayIn(TimeZone.currentSystemDefault()))
+    }
     var hour by remember { mutableStateOf(initialAlert?.dateTime?.hour ?: 10) }
     var minute by remember { mutableStateOf(initialAlert?.dateTime?.minute ?: 0) }
     var showDatePicker by remember { mutableStateOf(false) }
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds())
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDate.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds()
+        )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
-            confirmButton = { TextButton(onClick = { datePickerState.selectedDateMillis?.let { selectedDate = Instant.fromEpochMilliseconds(it).toLocalDateTime(TimeZone.UTC).date }; showDatePicker = false }) { Text(stringResource(Res.string.dialog_btn_ok)) } }
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let {
+                        selectedDate = Instant.fromEpochMilliseconds(it).toLocalDateTime(TimeZone.UTC).date
+                    }
+                    showDatePicker = false
+                }) { Text(stringResource(Res.string.dialog_btn_ok)) }
+            }
         ) { DatePicker(state = datePickerState) }
     }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(if(initialAlert == null) Res.string.alert_dialog_title else Res.string.menu_edit)) },
+        title = {
+            Text(stringResource(if (initialAlert == null) Res.string.alert_dialog_title else Res.string.menu_edit))
+        },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
                 HuertaInput(name, { name = it }, stringResource(Res.string.alert_name_hint), Icons.Default.Label)
@@ -179,33 +228,46 @@ fun AlertCreationDialog(initialAlert: AlertUiModel?, onDismiss: () -> Unit, onSa
 
                 Spacer(Modifier.height(20.dp))
 
-                // SELECTOR DE TIEMPO CON MINUTOS MOVILES
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
-                    // Columna Horas
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Hora", fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { if(hour > 0) hour-- else hour = 23 }) { Icon(Icons.Default.Remove, null) }
+                            IconButton(onClick = { if (hour > 0) hour-- else hour = 23 }) {
+                                Icon(Icons.Default.Remove, null)
+                            }
                             Text(hour.toString().padStart(2, '0'), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                            IconButton(onClick = { if(hour < 23) hour++ else hour = 0 }) { Icon(Icons.Default.Add, null) }
+                            IconButton(onClick = { if (hour < 23) hour++ else hour = 0 }) {
+                                Icon(Icons.Default.Add, null)
+                            }
                         }
                     }
-
                     Text(":", fontSize = 24.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 15.dp))
-
-                    // Columna Minutos
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("Minutos", fontSize = 10.sp, color = MaterialTheme.colorScheme.secondary)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { if(minute > 0) minute -= 5 else minute = 55 }) { Icon(Icons.Default.Remove, null) }
+                            IconButton(onClick = { if (minute > 0) minute -= 5 else minute = 55 }) {
+                                Icon(Icons.Default.Remove, null)
+                            }
                             Text(minute.toString().padStart(2, '0'), fontSize = 24.sp, fontWeight = FontWeight.Bold)
-                            IconButton(onClick = { if(minute < 55) minute += 5 else minute = 0 }) { Icon(Icons.Default.Add, null) }
+                            IconButton(onClick = { if (minute < 55) minute += 5 else minute = 0 }) {
+                                Icon(Icons.Default.Add, null)
+                            }
                         }
                     }
                 }
             }
         },
-        confirmButton = { Button(onClick = { onSave(name, desc, selectedDate, hour, minute) }) { Text(stringResource(Res.string.alert_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.alert_cancel)) } }
+        confirmButton = {
+            Button(onClick = { onSave(name, desc, selectedDate, hour, minute) }) {
+                Text(stringResource(Res.string.alert_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.alert_cancel)) }
+        }
     )
 }

@@ -53,7 +53,7 @@ fun AddDiaryEntryScreen(
     val isEditMode = taskId != null
     val scrollState = rememberScrollState()
 
-    // --- RECURSOS (Fuera de lambdas para evitar errores de contexto) ---
+    // --- RECURSOS ---
     val irrigationTypeStr = stringResource(Res.string.diary_chip_irrigation)
     val successMsg = stringResource(Res.string.dialog_success_diary_saved)
 
@@ -61,7 +61,12 @@ fun AddDiaryEntryScreen(
     var title by remember { mutableStateOf(initialTitle ?: "") }
     var description by remember { mutableStateOf(initialDesc ?: "") }
     var selectedDate by remember {
-        mutableStateOf(if (initialDateMillis > 0) Instant.fromEpochMilliseconds(initialDateMillis).toLocalDateTime(TimeZone.currentSystemDefault()).date else Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date)
+        mutableStateOf(
+            if (initialDateMillis > 0)
+                Instant.fromEpochMilliseconds(initialDateMillis).toLocalDateTime(TimeZone.currentSystemDefault()).date
+            else
+                Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).date
+        )
     }
 
     // Lógica de Jardineras y Bancales
@@ -108,10 +113,14 @@ fun AddDiaryEntryScreen(
         }
     ) { padding ->
         Column(
-            modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(scrollState).padding(20.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(scrollState)
+                .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // --- SECCIÓN 1: DÓNDE Y CUÁNDO ---
+            // --- SECCIÓN 1: UBICACIÓN Y FECHA ---
             OutlinedCard(border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     Text("Ubicación y Fecha", color = GreenPrimary, fontWeight = FontWeight.Bold)
@@ -129,7 +138,7 @@ fun AddDiaryEntryScreen(
                                     text = { Text(jardinera.nombre) },
                                     onClick = {
                                         selectedJardinera = jardinera
-                                        selectedBancalIds.clear() // Reset al cambiar de jardinera
+                                        selectedBancalIds.clear()
                                         expandedGarden = false
                                     }
                                 )
@@ -147,11 +156,15 @@ fun AddDiaryEntryScreen(
                 }
             }
 
-            // --- NUEVA SECCIÓN: SELECTOR VISUAL DE BANCALES ---
+            // --- SECCIÓN 2: SELECTOR VISUAL DE BANCALES ---
             if (selectedJardinera != null) {
                 OutlinedCard(border = BorderStroke(1.dp, GreenPrimary.copy(alpha = 0.3f))) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Text("Selecciona los bancales", fontWeight = FontWeight.Bold)
                             TextButton(onClick = {
                                 if (selectedBancalIds.size == bancalesDisponibles.size) selectedBancalIds.clear()
@@ -164,7 +177,6 @@ fun AddDiaryEntryScreen(
                             }
                         }
 
-                        // Reutilizamos la lógica de rejilla de la Jardinera
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(selectedJardinera!!.columnas),
                             modifier = Modifier.heightIn(max = 250.dp).padding(top = 8.dp),
@@ -185,7 +197,7 @@ fun AddDiaryEntryScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = bancal.nombreCultivo?.take(2) ?: "${bancal.fila}-${bancal.columna}",
+                                        text = bancal.nombreCultivo?.take(2) ?: "${bancal.fila + 1}-${bancal.columna + 1}",
                                         color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
                                         fontSize = 10.sp,
                                         fontWeight = FontWeight.Bold
@@ -197,7 +209,7 @@ fun AddDiaryEntryScreen(
                 }
             }
 
-            // --- SECCIÓN 2: DETALLES DE LA TAREA ---
+            // --- SECCIÓN 3: DETALLES DE LA TAREA ---
             OutlinedCard(border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     Text("Detalles", color = GreenPrimary, fontWeight = FontWeight.Bold)
@@ -218,36 +230,61 @@ fun AddDiaryEntryScreen(
                     }
 
                     if (selectedType == irrigationTypeStr) {
-                        Column(modifier = Modifier.background(GreenPrimary.copy(alpha = 0.05f), RoundedCornerShape(12.dp)).padding(12.dp)) {
+                        Column(
+                            modifier = Modifier
+                                .background(GreenPrimary.copy(alpha = 0.05f), RoundedCornerShape(12.dp))
+                                .padding(12.dp)
+                        ) {
                             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                                 Text("Cantidad de agua")
                                 Text("${waterAmount.toInt()} L", fontWeight = FontWeight.Bold, color = GreenPrimary)
                             }
-                            Slider(value = waterAmount, onValueChange = { waterAmount = it }, valueRange = 0f..20f, steps = 19)
+                            Slider(
+                                value = waterAmount,
+                                onValueChange = { waterAmount = it },
+                                valueRange = 0f..20f,
+                                steps = 19
+                            )
                         }
                     }
                 }
             }
 
-            // --- SECCIÓN 3: FOTO Y URGENCIA ---
+            // --- SECCIÓN 4: FOTO Y URGENCIA ---
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 Surface(
-                    modifier = Modifier.weight(1f).height(100.dp).clip(RoundedCornerShape(16.dp)).clickable { showPhotoOptions = true },
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(100.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .clickable { showPhotoOptions = true },
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     border = BorderStroke(1.dp, if (diaryPhotoBytes != null) GreenPrimary else Color.Transparent)
                 ) {
                     Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(if (diaryPhotoBytes != null) Icons.Outlined.Image else Icons.Outlined.CameraAlt, null, tint = if (diaryPhotoBytes != null) GreenPrimary else Color.Gray)
+                        Icon(
+                            if (diaryPhotoBytes != null) Icons.Outlined.Image else Icons.Outlined.CameraAlt,
+                            null,
+                            tint = if (diaryPhotoBytes != null) GreenPrimary else Color.Gray
+                        )
                         Text(if (diaryPhotoBytes != null) "Foto añadida" else "Cámara", fontSize = 12.sp)
                     }
                 }
 
                 Card(
                     modifier = Modifier.weight(0.7f).height(100.dp),
-                    colors = CardDefaults.cardColors(containerColor = if (isUrgent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface),
-                    border = BorderStroke(1.dp, if(isUrgent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant)
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isUrgent) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surface
+                    ),
+                    border = BorderStroke(
+                        1.dp,
+                        if(isUrgent) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
+                    )
                 ) {
-                    Column(modifier = Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.SpaceBetween) {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(12.dp),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
                         Text("¿Urgente?", fontWeight = FontWeight.Bold, fontSize = 12.sp)
                         Switch(checked = isUrgent, onCheckedChange = { isUrgent = it }, modifier = Modifier.align(Alignment.End))
                     }
@@ -260,13 +297,14 @@ fun AddDiaryEntryScreen(
                     if (title.isNotBlank() && selectedBancalIds.isNotEmpty()) {
                         val finalDesc = if (selectedType == irrigationTypeStr) "$title - ${waterAmount.toInt()}L" else description
 
-                        selectedBancalIds.forEach { bId ->
+                        // SOLUCIÓN: Usamos argumentos posicionales (bancalId, tipo, desc, fecha)
+                        // para evitar errores por nombres de parámetros en el ViewModel.
+                        selectedBancalIds.forEach { id ->
                             viewModel.guardarEntradaDiario(
-                                bancalId = bId,
-                                tipo = selectedType,
-                                desc = finalDesc,
-                                fecha = selectedDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds(),
-                                id = taskId?.toLongOrNull() ?: 0L // FIX: Pasa el ID si existe para actualizar
+                                id,                                                                      // bancalId
+                                selectedType,                                                            // tipo
+                                finalDesc,                                                               // desc
+                                selectedDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds() // fecha
                             )
                         }
                         showSuccessDialog = true
@@ -276,7 +314,7 @@ fun AddDiaryEntryScreen(
                 enabled = selectedBancalIds.isNotEmpty() && title.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
             ) {
-                Text(if(isEditMode) "Actualizar Tarea" else "Registrar en ${selectedBancalIds.size} bancales", fontWeight = FontWeight.Bold)
+                Text("Registrar en ${selectedBancalIds.size} bancales", fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -296,7 +334,9 @@ fun AddDiaryEntryScreen(
     }
 
     if (showDatePicker) {
-        val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds())
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedDate.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds()
+        )
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
@@ -314,7 +354,10 @@ fun AddDiaryEntryScreen(
 @Composable
 fun SelectorRow(label: String, value: String, icon: ImageVector, onClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {

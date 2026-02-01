@@ -8,7 +8,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.PushPin // Importante
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.proyecto.data.database.entity.BancalEntity
+import com.example.proyecto.data.database.entity.JardineraEntity
 import com.example.proyecto.ui.StatusPill
 import com.example.proyecto.ui.navigation.AppScreens
 import com.example.proyecto.ui.theme.GreenPrimary
@@ -26,7 +26,6 @@ import com.example.proyecto.ui.theme.RedDanger
 import org.jetbrains.compose.resources.stringResource
 import huertomanager.composeapp.generated.resources.*
 import org.koin.compose.viewmodel.koinViewModel
-import com.example.proyecto.ui.home.ShortcutManager // Importamos el gestor
 
 // 1. Modelo de datos para la UI
 data class GardenSlot(
@@ -67,35 +66,20 @@ fun GardenScreen(
                     Button(onClick = { showAddGardenDialog = true }) { Text("Crear mi primera jardinera") }
                 }
             } else {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(text = currentJardinera.nombre, style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                         Text("${currentJardinera.filas}x${currentJardinera.columnas} - ${stringResource(Res.string.garden_columns)}", fontSize = 12.sp)
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // --- BOTÓN DE CHINCHETA (PIN) ---
-                        val isPinned = ShortcutManager.pinnedGardenIds.contains(currentJardinera.id)
-                        IconButton(onClick = {
-                            if (isPinned) ShortcutManager.pinnedGardenIds.remove(currentJardinera.id)
-                            else ShortcutManager.pinnedGardenIds.add(currentJardinera.id)
-                        }) {
-                            Icon(
-                                imageVector = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
-                                contentDescription = "Pin Shortcut",
-                                tint = if (isPinned) GreenPrimary else MaterialTheme.colorScheme.onSurface
+                    Box {
+                        IconButton(onClick = { showGardenMenu = true }) { Icon(Icons.Filled.MoreVert, null) }
+                        DropdownMenu(expanded = showGardenMenu, onDismissRequest = { showGardenMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Eliminar", color = RedDanger) },
+                                leadingIcon = { Icon(Icons.Default.Delete, null, tint = RedDanger) },
+                                onClick = { showGardenMenu = false }
                             )
-                        }
-
-                        Box {
-                            IconButton(onClick = { showGardenMenu = true }) { Icon(Icons.Filled.MoreVert, null) }
-                            DropdownMenu(expanded = showGardenMenu, onDismissRequest = { showGardenMenu = false }) {
-                                DropdownMenuItem(
-                                    text = { Text("Eliminar", color = RedDanger) },
-                                    leadingIcon = { Icon(Icons.Default.Delete, null, tint = RedDanger) },
-                                    onClick = { showGardenMenu = false }
-                                )
-                            }
                         }
                     }
                 }
@@ -168,6 +152,7 @@ fun GardenScreen(
     }
 }
 
+// COMPONENTE QUE FALTABA
 @Composable
 fun GardenSlotCard(slot: GardenSlot, onClick: () -> Unit) {
     val isEmpty = slot.contentName == null

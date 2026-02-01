@@ -7,14 +7,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "bancales",
-    foreignKeys = [
-        ForeignKey(
-            entity = JardineraEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["jardineraId"],
-            onDelete = ForeignKey.CASCADE // Si borras la jardinera, se borran sus bancales
-        )
-    ],
+    foreignKeys = [ForeignKey(entity = JardineraEntity::class, parentColumns = ["id"], childColumns = ["jardineraId"], onDelete = ForeignKey.CASCADE)],
     indices = [Index("jardineraId")]
 )
 data class BancalEntity(
@@ -22,9 +15,11 @@ data class BancalEntity(
     val jardineraId: Long,
     val fila: Int,
     val columna: Int,
-    val cultivoSlug: String? = null, // ID de OpenFarm
+    val perenualId: Int? = null, // VUELVE A SER INT
     val nombreCultivo: String? = null,
-    val imagenUrl: String? = null,   // URL de la imagen de la API
-    val fechaSiembra: Long? = null,  // Timestamp
-    val diasParaCosecha: Int? = null // Dato de OpenFarm para calcular la fecha
+    val imagenUrl: String? = null,
+    val frecuenciaRiegoDias: Int? = null,
+    val necesidadSol: String? = null,
+    val fechaSiembra: Long? = null,
+    val esFuncional: Boolean = true
 )
