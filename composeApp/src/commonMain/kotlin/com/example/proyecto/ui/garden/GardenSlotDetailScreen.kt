@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontStyle
@@ -53,7 +54,6 @@ fun GardenSlotDetailScreen(
     val historial = historialState.value
 
     // RECUPERAR DATOS EXTENDIDOS (FICHA)
-    // Usamos derivedStateOf para recalcular solo si cambia el bancal
     val fichaTecnica by remember(bancal) {
         derivedStateOf { viewModel.getInfoExtendida(bancal?.perenualId) }
     }
@@ -113,7 +113,7 @@ fun GardenSlotDetailScreen(
                     }
                 }
 
-                // 2. NUEVA SECCIÓN: ASOCIACIONES Y CONSEJOS (Solo si hay ficha)
+                // 2. GUÍA DE CULTIVO
                 if (fichaTecnica != null) {
                     Spacer(Modifier.height(20.dp))
                     Text("Guía de Cultivo", fontWeight = FontWeight.Bold, fontSize = 18.sp)
@@ -121,7 +121,6 @@ fun GardenSlotDetailScreen(
 
                     HuertaCard {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            // Amigos
                             Row(verticalAlignment = Alignment.Top) {
                                 Icon(Icons.Default.ThumbUp, null, tint = GreenPrimary, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(8.dp))
@@ -130,9 +129,8 @@ fun GardenSlotDetailScreen(
                                     Text(fichaTecnica!!.amigos, fontSize = 13.sp, color = Color.Gray)
                                 }
                             }
-                            Divider(color = Color.LightGray.copy(alpha=0.5f))
+                            HorizontalDivider(color = Color.LightGray.copy(alpha=0.5f))
 
-                            // Enemigos
                             Row(verticalAlignment = Alignment.Top) {
                                 Icon(Icons.Default.ThumbDown, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(8.dp))
@@ -141,9 +139,8 @@ fun GardenSlotDetailScreen(
                                     Text(fichaTecnica!!.enemigos, fontSize = 13.sp, color = Color.Gray)
                                 }
                             }
-                            Divider(color = Color.LightGray.copy(alpha=0.5f))
+                            HorizontalDivider(color = Color.LightGray.copy(alpha=0.5f))
 
-                            // Consejo
                             Row(verticalAlignment = Alignment.Top) {
                                 Icon(Icons.Default.Lightbulb, null, tint = Color(0xFFFBC02D), modifier = Modifier.size(20.dp))
                                 Spacer(Modifier.width(8.dp))
@@ -162,7 +159,12 @@ fun GardenSlotDetailScreen(
                 Spacer(Modifier.height(12.dp))
                 Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(10.dp)) {
                     QuickActionItem("Regar", Icons.Default.WaterDrop, Modifier.weight(1f)) { activeActionType = "RIEGO" }
-                    QuickActionItem("Podar", Icons.Default.ContentCut, Modifier.weight(1f)) { viewModel.registrarAccionRapida(id, "PODA") }
+
+                    // FIX: Reemplazado registrarAccionRapida por guardarEntradaDiario
+                    QuickActionItem("Podar", Icons.Default.ContentCut, Modifier.weight(1f)) {
+                        viewModel.guardarEntradaDiario(id, "PODA", "Poda realizada", System.currentTimeMillis())
+                    }
+
                     QuickActionItem("Tratar", Icons.Default.BugReport, Modifier.weight(1f)) { activeActionType = "ANTIPLAGA" }
                     QuickActionItem("Abonar", Icons.Default.Science, Modifier.weight(1f)) { activeActionType = "ABONADO" }
                 }
@@ -199,10 +201,8 @@ fun GardenSlotDetailScreen(
     if (activeActionType != null) ActionDialog(activeActionType!!, viewModel, id) { activeActionType = null }
 }
 
-// Helpers visuales se mantienen igual (BadgeInfo, ActionDialog, QuickActionItem, TimelineItem)
-// ... (Copia los mismos helpers de tu archivo anterior, no cambian) ...
 @Composable
-fun BadgeInfo(icon: androidx.compose.ui.graphics.vector.ImageVector, text: String) {
+fun BadgeInfo(icon: ImageVector, text: String) {
     Surface(color = GreenPrimary.copy(alpha = 0.1f), shape = RoundedCornerShape(4.dp)) {
         Row(Modifier.padding(horizontal = 8.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, null, modifier = Modifier.size(14.dp), tint = GreenPrimary)
@@ -264,7 +264,7 @@ fun ActionDialog(type: String, viewModel: GardenViewModel, bancalId: Long, onDis
 }
 
 @Composable
-fun QuickActionItem(l: String, i: androidx.compose.ui.graphics.vector.ImageVector, m: Modifier, c: () -> Unit) {
+fun QuickActionItem(l: String, i: ImageVector, m: Modifier, c: () -> Unit) {
     Card(modifier = m.clickable { c() }, shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
         Column(Modifier.padding(12.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Icon(i, null, tint = GreenPrimary)
@@ -274,7 +274,7 @@ fun QuickActionItem(l: String, i: androidx.compose.ui.graphics.vector.ImageVecto
 }
 
 @Composable
-fun TimelineItem(t: String, d: String, tm: String, i: androidx.compose.ui.graphics.vector.ImageVector, c: Color, s: Boolean) {
+fun TimelineItem(t: String, d: String, tm: String, i: ImageVector, c: Color, s: Boolean) {
     Row(Modifier.height(IntrinsicSize.Min)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(42.dp)) {
             Box(Modifier.size(32.dp).border(2.dp, c, CircleShape), Alignment.Center) {

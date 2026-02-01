@@ -1,25 +1,20 @@
 package com.example.proyecto.data.database.dao
 
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import androidx.room.Update
-import com.example.proyecto.data.database.entity.AlertEntity
+import androidx.room.*
+import com.example.proyecto.data.database.entity.AlertaEntity
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface AlertDao {
-    @Query("SELECT * FROM alerts")
-    fun getAllAlerts(): Flow<List<AlertEntity>>
+    @Query("SELECT * FROM alertas ORDER BY dateTimeEpochMillis ASC")
+    fun getAllAlerts(): Flow<List<AlertaEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAlert(alert: AlertEntity)
+    suspend fun insertAlert(alert: AlertaEntity)
 
     @Update
-    suspend fun updateAlert(alert: AlertEntity)
+    suspend fun updateAlert(alert: AlertaEntity)
 
     @Delete
-    suspend fun deleteAlert(alert: AlertEntity)
+    suspend fun deleteAlert(alert: AlertaEntity)
 }

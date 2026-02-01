@@ -11,7 +11,7 @@ import com.example.proyecto.data.database.entity.JardineraEntity
 import com.example.proyecto.data.database.entity.BancalEntity
 import com.example.proyecto.data.database.entity.ProductoEntity
 import com.example.proyecto.data.database.entity.EntradaDiarioEntity
-import com.example.proyecto.data.database.entity.AlertEntity // <--- IMPORT CRÍTICO
+import com.example.proyecto.data.database.entity.AlertaEntity
 
 @Database(
     entities = [
@@ -19,9 +19,9 @@ import com.example.proyecto.data.database.entity.AlertEntity // <--- IMPORT CRÍ
         BancalEntity::class,
         ProductoEntity::class,
         EntradaDiarioEntity::class,
-        AlertEntity::class
+        AlertaEntity::class
     ],
-    version = 6
+    version = 7
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun jardineraDao(): JardineraDao

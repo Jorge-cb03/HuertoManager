@@ -79,7 +79,11 @@ fun AppNavigation(
             composable(AppScreens.Login) {
                 LoginScreen(
                     onLoginSuccess = { navController.navigate(AppScreens.Home) { popUpTo(AppScreens.Login) { inclusive = true } } },
-                    onNavigateToRegister = { navController.navigate(AppScreens.Register) }
+                    onNavigateToRegister = { navController.navigate(AppScreens.Register) },
+                    // CORRECCIÓN: Añadida la lambda de Google
+                    onGoogleLoginClick = {
+                        // Lógica de Google aquí
+                    }
                 )
             }
 

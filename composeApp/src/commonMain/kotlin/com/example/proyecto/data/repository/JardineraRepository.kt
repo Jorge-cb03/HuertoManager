@@ -5,7 +5,6 @@ import com.example.proyecto.data.database.entity.*
 import kotlinx.coroutines.flow.first
 
 // --- CLASES LOCALES (Sustituyen a las de la API eliminada) ---
-// Las definimos aquí para mantener la compatibilidad con el resto de la app
 data class PerenualImage(
     val regularUrl: String?,
     val mediumUrl: String? = null
@@ -26,11 +25,13 @@ class JardineraRepository(private val db: AppDatabase) {
     private val diarioDao = db.entradaDiarioDao()
     private val alertDao = db.alertDao()
 
-    // --- GESTIÓN DE ALERTAS ---
+    // --- GESTIÓN DE ALERTAS (CORREGIDO: AlertEntity -> AlertaEntity) ---
     fun getAlerts() = alertDao.getAllAlerts()
-    suspend fun insertAlert(alert: AlertEntity) = alertDao.insertAlert(alert)
-    suspend fun updateAlert(alert: AlertEntity) = alertDao.updateAlert(alert)
-    suspend fun deleteAlert(alert: AlertEntity) = alertDao.deleteAlert(alert)
+
+    // FIX: Se cambia AlertEntity por AlertaEntity para coincidir con la base de datos
+    suspend fun insertAlert(alert: AlertaEntity) = alertDao.insertAlert(alert)
+    suspend fun updateAlert(alert: AlertaEntity) = alertDao.updateAlert(alert)
+    suspend fun deleteAlert(alert: AlertaEntity) = alertDao.deleteAlert(alert)
 
     // ===================================================================================
     // CATÁLOGO MAESTRO (LOCAL - FUENTE DE VERDAD)
@@ -117,6 +118,11 @@ class JardineraRepository(private val db: AppDatabase) {
     fun getTodoElHistorial() = diarioDao.getAllEntradas()
     fun getHistorialBancal(id: Long) = diarioDao.getDiarioByBancal(id)
     suspend fun insertarEntradaDiario(e: EntradaDiarioEntity) = diarioDao.insertEntrada(e)
+
+    // Métodos para Diario Detail y Delete
+    suspend fun getEntradaDiarioById(id: Long) = diarioDao.getEntradaById(id)
+    suspend fun eliminarEntradaDiario(id: Long) = diarioDao.deleteById(id)
+
     suspend fun registrarRiego(id: Long, l: Double) { diarioDao.insertEntrada(EntradaDiarioEntity(bancalId = id, tipoAccion = "RIEGO", descripcion = "Riego: $l L.", fecha = System.currentTimeMillis())) }
     suspend fun registrarTratamiento(id: Long, pId: Long, cant: Double, t: String) {
         val p = productoDao.getProductoById(pId) ?: return

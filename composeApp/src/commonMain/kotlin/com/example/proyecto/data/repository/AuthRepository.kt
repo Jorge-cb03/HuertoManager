@@ -15,7 +15,6 @@ class AuthRepository {
         auth.createUserWithEmailAndPassword(email, pass)
     }
 
-    // Nuevo método para autenticar con el token obtenido de Android/iOS
     suspend fun signInWithGoogle(idToken: String) {
         val credential = GoogleAuthProvider.credential(idToken, null)
         auth.signInWithCredential(credential)
@@ -23,7 +22,8 @@ class AuthRepository {
 
     fun getCurrentUser() = auth.currentUser
 
-    fun logout() {
+    // CORRECCIÓN: Añadido suspend
+    suspend fun logout() {
         auth.signOut()
     }
 }

@@ -17,4 +17,9 @@ interface EntradaDiarioDao {
 
     @Query("SELECT * FROM entradas_diario WHERE descripcion LIKE '%' || :query || '%' OR tipoAccion = :tipo ORDER BY fecha DESC")
     fun buscarEntradas(query: String, tipo: String): Flow<List<EntradaDiarioEntity>>
+    @Query("SELECT * FROM entradas_diario WHERE id = :id")
+    suspend fun getEntradaById(id: Long): EntradaDiarioEntity?
+
+    @Query("DELETE FROM entradas_diario WHERE id = :id")
+    suspend fun deleteById(id: Long)
 }

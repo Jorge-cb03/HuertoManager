@@ -47,10 +47,10 @@ fun GardenScreen(
     var currentGardenIndex by remember { mutableStateOf(initialGardenIndex) }
     val currentJardinera = jardineras.getOrNull(currentGardenIndex)
 
-    val bancales by if (currentJardinera != null) {
-        viewModel.getBancales(currentJardinera.id).collectAsState(initial = emptyList())
-    } else {
-        remember { mutableStateOf(emptyList<BancalEntity>()) }
+    val bancales by produceState<List<BancalEntity>>(emptyList(), currentJardinera?.id) {
+        currentJardinera?.let {
+            viewModel.getBancales(it.id).collect { value = it }
+        }
     }
 
     var showPlantSelector by remember { mutableStateOf(false) }
@@ -98,8 +98,9 @@ fun GardenScreen(
                                 id = bancal.id,
                                 positionName = "${bancal.fila + 1}-${bancal.columna + 1}",
                                 contentName = bancal.nombreCultivo,
-                                status = if (bancal.cultivoSlug != null) "Sano" else null,
-                                icon = if (bancal.cultivoSlug != null) Icons.Filled.Eco else null
+                                // FIX: Cambio de cultivoSlug por perenualId
+                                status = if (bancal.perenualId != null) "Sano" else null,
+                                icon = if (bancal.perenualId != null) Icons.Filled.Eco else null
                             ),
                             onClick = {
                                 if (bancal.nombreCultivo == null) {
@@ -127,7 +128,16 @@ fun GardenScreen(
             onDismissRequest = { showAddGardenDialog = false },
             title = { Text("Nueva Jardinera") },
             text = { OutlinedTextField(value = tempName, onValueChange = { tempName = it }, label = { Text("Nombre") }) },
-            confirmButton = { Button(onClick = { if(tempName.isNotBlank()) viewModel.crearNuevaJardinera(tempName); showAddGardenDialog = false; tempName = "" }) { Text("Crear") } }
+            confirmButton = {
+                Button(onClick = {
+                    if(tempName.isNotBlank()) {
+                        // FIX: Pasar parámetros obligatorios f (filas) y c (columnas)
+                        viewModel.crearNuevaJardinera(tempName, 4, 2)
+                        showAddGardenDialog = false
+                        tempName = ""
+                    }
+                }) { Text("Crear") }
+            }
         )
     }
 
@@ -141,7 +151,10 @@ fun GardenScreen(
                         headlineContent = { Text("Tomate Cherry") },
                         leadingContent = { Icon(Icons.Filled.Eco, null, tint = GreenPrimary) },
                         modifier = Modifier.clickable {
-                            selectedSlotIdForPlanting?.let { viewModel.plantar(it, "tomato") }
+                            selectedSlotIdForPlanting?.let {
+                                // FIX: Usar ID numérico 2 (Tomate Cherry) en lugar de String "tomato"
+                                viewModel.plantar(it, 2)
+                            }
                             showPlantSelector = false
                         }
                     )
@@ -152,7 +165,6 @@ fun GardenScreen(
     }
 }
 
-// COMPONENTE QUE FALTABA
 @Composable
 fun GardenSlotCard(slot: GardenSlot, onClick: () -> Unit) {
     val isEmpty = slot.contentName == null

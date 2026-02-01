@@ -1,5 +1,6 @@
 package com.example.proyecto.ui.alerts
 
+// FIX: Importación corregida a AlertaEntity (nombre real en tu BD)
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -10,10 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-// Mantenemos estos imports por si acaso, pero ya no usaremos 'by' para el flow
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,11 +24,9 @@ import com.example.proyecto.ui.garden.GardenViewModel
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
 import com.example.proyecto.util.NotificationManager
-// Importamos la entidad explícitamente
-import com.example.proyecto.data.database.entity.AlertEntity
+import huertomanager.composeapp.generated.resources.*
 import kotlinx.datetime.*
 import org.jetbrains.compose.resources.stringResource
-import huertomanager.composeapp.generated.resources.*
 import org.koin.compose.viewmodel.koinViewModel
 
 @Immutable
@@ -49,20 +44,15 @@ fun AlertsScreen(
     navController: NavController,
     viewModel: GardenViewModel = koinViewModel()
 ) {
-    // Estados locales (estos sí funcionan con 'by' porque son MutableState simples)
     var showAddDialog by remember { mutableStateOf(false) }
     var editingAlert by remember { mutableStateOf<AlertUiModel?>(null) }
 
-    // --- CORRECCIÓN RADICAL DEL ERROR ---
-    // En lugar de usar 'by', recolectamos el estado explícitamente y accedemos a .value
-    // Esto elimina el error de inferencia del compilador.
-    val alertsState = viewModel.alerts.collectAsState()
-    val alertsEntity = alertsState.value
-    // -----------------------------------
+    // RECOLECCIÓN DEL ESTADO
+    val alertsState by viewModel.alerts.collectAsState()
 
-    // Mapear Entidad -> UI Model
-    val alerts = remember(alertsEntity) {
-        alertsEntity.map { entity ->
+    // MAPEADO SEGURO
+    val alerts = remember(alertsState) {
+        alertsState.map { entity ->
             AlertUiModel(
                 id = entity.id,
                 title = entity.title,
@@ -93,10 +83,7 @@ fun AlertsScreen(
         }
     ) { padding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 20.dp),
+            modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(top = 20.dp, bottom = 40.dp)
         ) {
@@ -136,7 +123,6 @@ fun AlertsScreen(
     }
 }
 
-// ... (El resto del archivo: AlertItemCard y AlertCreationDialog se mantienen igual)
 @Composable
 fun AlertItemCard(alert: AlertUiModel, onEdit: () -> Unit, onDelete: () -> Unit) {
     var showMenu by remember { mutableStateOf(false) }
