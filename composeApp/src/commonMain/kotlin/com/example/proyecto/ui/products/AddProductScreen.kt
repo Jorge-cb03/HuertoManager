@@ -20,8 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight // IMPORT NECESARIO AÑADIDO
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -29,18 +28,17 @@ import coil3.compose.AsyncImage
 import com.example.proyecto.domain.model.ProductType
 import com.example.proyecto.ui.HuertaInput
 import com.example.proyecto.ui.garden.GardenViewModel
+import com.example.proyecto.data.repository.PerenualSpecies
 import com.example.proyecto.ui.theme.GreenPrimary
-import kotlinx.coroutines.delay
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(
     navController: NavController,
-    productId: String? = null,
+    productId: Long? = null, // ID opcional para activar modo edición
     viewModel: GardenViewModel = koinViewModel()
 ) {
-    val idLong = productId?.toLongOrNull() ?: 0L
     val isEditMode = productId != null
 
     // Estados
@@ -56,20 +54,22 @@ fun AddProductScreen(
     var expandedType by remember { mutableStateOf(false) }
     var showApiSearchDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
-    val apiResults by viewModel.apiSearchResults.collectAsState()
 
-    // Cargar datos
+    val apiResults: List<PerenualSpecies> by viewModel.apiSearchResults.collectAsState(emptyList())
+
+    // --- NUEVO BLOQUE: CARGA DE DATOS PARA EDICIÓN ---
     LaunchedEffect(productId) {
-        if (isEditMode) {
-            val p = viewModel.getProductoById(idLong)
-            p?.let {
-                name = it.nombre
-                stock = it.stock.toString()
-                notes = it.notasCultivo ?: ""
-                perenualId = it.perenualId
-                selectedImageUrl = it.imagenUrl
-                scientificName = it.nombreCientifico
-                selectedType = try { ProductType.valueOf(it.categoria) } catch(e: Exception) { ProductType.SEED }
+        if (isEditMode && productId != null) {
+            val producto = viewModel.getProductoById(productId)
+            producto?.let { p ->
+                name = p.nombre
+                stock = p.stock.toString()
+                notes = p.notasCultivo ?: ""
+                perenualId = p.perenualId
+                selectedImageUrl = p.imagenUrl
+                scientificName = p.nombreCientifico
+                // Intentamos recuperar el tipo, si falla ponemos SEED
+                selectedType = try { ProductType.valueOf(p.categoria) } catch (e: Exception) { ProductType.SEED }
             }
         }
     }
@@ -130,7 +130,6 @@ fun AddProductScreen(
                             onClick = {
                                 showApiSearchDialog = true
                                 searchQuery = ""
-                                // CAMBIO: Cargar TODO el catálogo al abrir
                                 viewModel.buscarCultivoApi("")
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -155,15 +154,30 @@ fun AddProductScreen(
                 }
             }
 
+            // BOTÓN GUARDAR (MODIFICADO PARA EDICIÓN)
             Button(
                 onClick = {
-                    viewModel.guardarProducto(idLong, name, selectedType.name, stock.toDoubleOrNull() ?: 0.0, perenualId, selectedImageUrl, scientificName, notes)
+                    // Si estamos editando, usamos el productId original. Si no, 0L (crear nuevo).
+                    val idToSave = productId ?: 0L
+
+                    // FIX: Usamos argumentos posicionales o nombres completos para evitar errores
+                    viewModel.guardarProducto(
+                        id = idToSave,
+                        n = name,
+                        c = selectedType.name,
+                        s = stock.toDoubleOrNull() ?: 0.0,
+                        perenualId = perenualId, // CORREGIDO: pId -> perenualId
+                        imagenUrl = selectedImageUrl, // CORREGIDO: img -> imagenUrl
+                        nombreCientifico = scientificName, // CORREGIDO: cientifico -> nombreCientifico
+                        notas = notes
+                    )
+
                     navController.popBackStack()
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = name.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
-            ) { Text("Guardar Ficha") }
+            ) { Text(if (isEditMode) "Guardar Cambios" else "Guardar Ficha") }
         }
     }
 
@@ -175,29 +189,21 @@ fun AddProductScreen(
                 Column(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
                         value = searchQuery,
-                        onValueChange = { searchQuery = it },
+                        onValueChange = { searchQuery = it; viewModel.buscarCultivoApi(it) },
                         label = { Text("Filtrar (ej: Tomate)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         leadingIcon = { Icon(Icons.Default.Search, null) }
                     )
-
-                    // CAMBIO: Búsqueda reactiva inmediata (predictiva)
-                    LaunchedEffect(searchQuery) {
-                        viewModel.buscarCultivoApi(searchQuery)
-                    }
-
                     Spacer(Modifier.height(16.dp))
-
                     Box(Modifier.fillMaxWidth().height(300.dp).clip(RoundedCornerShape(8.dp)).background(MaterialTheme.colorScheme.surfaceVariant.copy(0.3f))) {
                         LazyColumn(Modifier.fillMaxSize()) {
                             items(apiResults) { crop ->
                                 ListItem(
                                     headlineContent = { Text(crop.commonName) },
                                     leadingContent = {
-                                        val img = crop.defaultImage?.regularUrl
                                         AsyncImage(
-                                            model = img,
+                                            model = crop.defaultImage?.regularUrl,
                                             contentDescription = null,
                                             modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White),
                                             contentScale = ContentScale.Crop,

@@ -63,18 +63,13 @@ fun GardenScreen(
         topBar = {
             TopAppBar(
                 title = { Text(currentJardinera?.nombre ?: "Mi Huerta") },
-                navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.Default.ArrowBack, null) } },
                 actions = {
                     currentJardinera?.let { jardinera ->
-                        val isPinned = ShortcutManager.pinnedGardenIds.contains(jardinera.id)
-                        IconButton(onClick = {
-                            if (isPinned) ShortcutManager.pinnedGardenIds.remove(jardinera.id)
-                            else ShortcutManager.pinnedGardenIds.add(jardinera.id)
-                        }) {
+                        IconButton(onClick = { viewModel.toggleFavorito(jardinera) }) {
                             Icon(
-                                imageVector = if (isPinned) Icons.Filled.PushPin else Icons.Outlined.PushPin,
+                                imageVector = if (jardinera.esFavorita) Icons.Filled.PushPin else Icons.Outlined.PushPin,
                                 contentDescription = null,
-                                tint = if (isPinned) GreenPrimary else MaterialTheme.colorScheme.onSurface
+                                tint = if (jardinera.esFavorita) GreenPrimary else MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }

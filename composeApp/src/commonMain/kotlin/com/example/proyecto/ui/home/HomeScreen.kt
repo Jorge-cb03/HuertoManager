@@ -37,7 +37,7 @@ fun HomeScreen(navController: NavController, viewModel: GardenViewModel = koinVi
     val now = remember { Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()) }
 
     val jardineras by viewModel.jardineras.collectAsState()
-    val pinnedGardens = jardineras.filter { ShortcutManager.pinnedGardenIds.contains(it.id) }
+    val favoritedGardens = jardineras.filter { it.esFavorita }
 
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 20.dp).verticalScroll(rememberScrollState())) {
         Row(Modifier.fillMaxWidth().padding(top = 40.dp, bottom = 20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -54,23 +54,24 @@ fun HomeScreen(navController: NavController, viewModel: GardenViewModel = koinVi
         Text("Accesos Directos", fontWeight = FontWeight.Bold, fontSize = 18.sp)
 
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp).horizontalScroll(rememberScrollState()),
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            if (pinnedGardens.isEmpty()) {
-                Text("Ancla jardineras con la chincheta para verlas aquí.", fontSize = 12.sp, color = Color.Gray, modifier = Modifier.padding(10.dp))
+            if (favoritedGardens.isEmpty()) {
+                Text("No tienes favoritos aún.", color = Color.Gray, modifier = Modifier.padding(16.dp))
             } else {
-                pinnedGardens.forEach { garden ->
+                favoritedGardens.forEach { garden ->
                     Card(
-                        modifier = Modifier.width(130.dp).height(90.dp).clickable {
-                            // NAVEGAMOS POR ID REAL
-                            navController.navigate(AppScreens.createGardenRoute(garden.id)) { launchSingleTop = true }
+                        modifier = Modifier.width(150.dp).height(110.dp).clickable {
+                            navController.navigate("garden/${garden.id}") { launchSingleTop = true }
                         },
+                        shape = RoundedCornerShape(24.dp),
                         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                     ) {
-                        Column(Modifier.fillMaxSize(), Arrangement.Center, Alignment.CenterHorizontally) {
-                            Icon(Icons.Default.PushPin, null, tint = GreenPrimary, modifier = Modifier.size(16.dp))
-                            Text(garden.nombre, fontSize = 12.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                        Column(Modifier.fillMaxSize().padding(12.dp), Arrangement.Center, Alignment.CenterHorizontally) {
+                            Icon(Icons.Default.PushPin, null, tint = GreenPrimary, modifier = Modifier.size(28.dp))
+                            Spacer(Modifier.height(8.dp))
+                            Text(garden.nombre, fontSize = 15.sp, fontWeight = FontWeight.Bold, maxLines = 1)
                         }
                     }
                 }

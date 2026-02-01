@@ -20,22 +20,37 @@ class GardenViewModel(private val repository: JardineraRepository) : ViewModel()
     val alerts: StateFlow<List<AlertaEntity>> = repository.getAlerts()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    // --- CORRECCIÓN: Métodos para DiaryDetailScreen ---
-    suspend fun getEntradaDiarioById(id: Long) = repository.getEntradaDiarioById(id)
-    fun eliminarEntradaDiario(id: Long) = viewModelScope.launch { repository.eliminarEntradaDiario(id) }
-
-    // FIX: Se cambió 'descripcion' por 'description' para coincidir con AlertaEntity
-    fun addAlert(title: String, desc: String, epochMillis: Long) = viewModelScope.launch {
-        repository.insertAlert(AlertaEntity(title = title, description = desc, dateTimeEpochMillis = epochMillis))
+    // --- NUEVAS FUNCIONES PARA DIARIO (Get y Delete) ---
+    suspend fun getEntradaDiarioById(id: Long): EntradaDiarioEntity? {
+        return repository.getEntradaDiarioById(id)
     }
 
-    fun updateAlert(id: Long, title: String, desc: String, epochMillis: Long) = viewModelScope.launch {
-        repository.updateAlert(AlertaEntity(id = id, title = title, description = desc, dateTimeEpochMillis = epochMillis))
+    fun eliminarEntradaDiario(id: Long) {
+        viewModelScope.launch {
+            repository.eliminarEntradaDiario(id)
+        }
     }
 
-    fun deleteAlert(id: Long) = viewModelScope.launch {
-        repository.deleteAlert(AlertaEntity(id = id, title = "", description = "", dateTimeEpochMillis = 0))
+    // --- FUNCIÓN GUARDAR MODIFICADA (SOPORTA EDICIÓN) ---
+    // Acepta 'id' opcional. Si es 0 crea nueva, si es > 0 actualiza.
+    fun guardarEntradaDiario(bancalId: Long, tipo: String, desc: String, fecha: Long, id: Long = 0L) {
+        viewModelScope.launch {
+            repository.insertarEntradaDiario(
+                EntradaDiarioEntity(
+                    id = id,
+                    bancalId = bancalId,
+                    tipoAccion = tipo,
+                    descripcion = desc,
+                    fecha = fecha
+                )
+            )
+        }
     }
+
+    // --- RESTO DE FUNCIONES (INTACTAS) ---
+    fun addAlert(title: String, desc: String, epochMillis: Long) = viewModelScope.launch { repository.insertAlert(AlertaEntity(title = title, description = desc, dateTimeEpochMillis = epochMillis)) }
+    fun updateAlert(id: Long, title: String, desc: String, epochMillis: Long) = viewModelScope.launch { repository.updateAlert(AlertaEntity(id = id, title = title, description = desc, dateTimeEpochMillis = epochMillis)) }
+    fun deleteAlert(id: Long) = viewModelScope.launch { repository.deleteAlert(AlertaEntity(id = id, title = "", description = "", dateTimeEpochMillis = 0)) }
 
     val productosFertilizante: Flow<List<ProductoEntity>> = repository.getProductos().map { list -> list.filter { it.categoria == ProductType.FERTILIZER.name } }
     val productosQuimicos: Flow<List<ProductoEntity>> = repository.getProductos().map { list -> list.filter { it.categoria == ProductType.CHEMICAL.name } }
@@ -65,7 +80,9 @@ class GardenViewModel(private val repository: JardineraRepository) : ViewModel()
     fun guardarProducto(id: Long, n: String, c: String, s: Double, perenualId: Int? = null, imagenUrl: String? = null, nombreCientifico: String? = null, notas: String? = null) {
         viewModelScope.launch { repository.insertarProducto(ProductoEntity(id = id, nombre = n, categoria = c, stock = s, perenualId = perenualId, imagenUrl = imagenUrl, nombreCientifico = nombreCientifico, notasCultivo = notas)) }
     }
-    fun guardarEntradaDiario(bancalId: Long, tipo: String, desc: String, fecha: Long) { viewModelScope.launch { repository.insertarEntradaDiario(EntradaDiarioEntity(bancalId = bancalId, tipoAccion = tipo, descripcion = desc, fecha = fecha)) } }
     fun getHistorial(id: Long) = repository.getHistorialBancal(id)
     fun getInfoExtendida(perenualId: Int?) = if (perenualId == null) null else repository.getFichaCompleta(perenualId)
+    fun toggleFavorito(jardinera: JardineraEntity) = viewModelScope.launch {
+        repository.actualizarJardinera(jardinera.copy(esFavorita = !jardinera.esFavorita))
+    }
 }

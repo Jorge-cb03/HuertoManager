@@ -1,6 +1,5 @@
 package com.example.proyecto.ui.diary
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -22,181 +22,231 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.proyecto.data.database.entity.BancalEntity
 import com.example.proyecto.data.database.entity.EntradaDiarioEntity
 import com.example.proyecto.ui.garden.GardenViewModel
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
 import kotlinx.datetime.*
 import org.koin.compose.viewmodel.koinViewModel
-import java.time.format.TextStyle
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DiaryDetailScreen(navController: NavController, taskId: Long, viewModel: GardenViewModel = koinViewModel()) {
     var entrada by remember { mutableStateOf<EntradaDiarioEntity?>(null) }
+    var bancalAsociado by remember { mutableStateOf<BancalEntity?>(null) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showMenu by remember { mutableStateOf(false) }
+
     val scrollState = rememberScrollState()
 
+    // Carga de datos
     LaunchedEffect(taskId) {
-        entrada = viewModel.getEntradaDiarioById(taskId)
+        val tarea = viewModel.getEntradaDiarioById(taskId)
+        entrada = tarea
+        tarea?.let {
+            bancalAsociado = viewModel.getBancalById(it.bancalId)
+        }
     }
 
     Scaffold(
-        // TopBar transparente para que se fusione con el header
         topBar = {
             TopAppBar(
                 title = { },
                 navigationIcon = {
                     IconButton(
                         onClick = { navController.popBackStack() },
-                        modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape)
-                    ) { Icon(Icons.Rounded.ArrowBack, null) }
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                    ) { Icon(Icons.Rounded.ArrowBack, null, tint = Color.White) }
                 },
                 actions = {
-                    IconButton(
-                        onClick = { showDeleteConfirm = true },
-                        modifier = Modifier.background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f), CircleShape)
-                    ) { Icon(Icons.Rounded.Delete, null, tint = RedDanger) }
+                    Box(modifier = Modifier.padding(8.dp)) {
+                        IconButton(
+                            onClick = { showMenu = true },
+                            modifier = Modifier.background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                        ) { Icon(Icons.Default.MoreVert, null, tint = Color.White) }
+
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Editar Registro") },
+                                leadingIcon = { Icon(Icons.Default.Edit, null) },
+                                onClick = {
+                                    showMenu = false
+                                    entrada?.let { item ->
+                                        navController.navigate("add_diary_entry/${item.fecha}?taskId=${item.id}")
+                                    }
+                                }
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("Eliminar", color = RedDanger) },
+                                leadingIcon = { Icon(Icons.Default.Delete, null, tint = RedDanger) },
+                                onClick = {
+                                    showMenu = false
+                                    showDeleteConfirm = true
+                                }
+                            )
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
-        // Botón de acción flotante extendido para Editar
-        floatingActionButton = {
-            entrada?.let { item ->
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        navController.navigate("add_diary_entry/${item.fecha}?taskId=${item.id}&title=${item.tipoAccion}&desc=${item.descripcion}")
-                    },
-                    containerColor = GreenPrimary,
-                    contentColor = Color.White,
-                    icon = { Icon(Icons.Rounded.Edit, null) },
-                    text = { Text("Editar Tarea", fontWeight = FontWeight.Bold) }
-                )
-            }
-        },
-        floatingActionButtonPosition = FabPosition.Center
+        contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
-        entrada?.let { item ->
+        if (entrada == null) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        } else {
+            val item = entrada!!
             val date = Instant.fromEpochMilliseconds(item.fecha).toLocalDateTime(TimeZone.currentSystemDefault())
-            val formattedDate = "${date.dayOfMonth} de ${date.month.getDisplayName(TextStyle.FULL, Locale("es", "ES"))} de ${date.year}"
+            val formattedDate = "${date.dayOfMonth}/${date.monthNumber}/${date.year}"
 
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
             ) {
-                // --- HERO HEADER VISUAL ---
+                // --- CABECERA VISUAL ---
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        // Fondo verde suave con forma redondeada abajo
-                        .clip(RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp))
-                        .background(GreenPrimary.copy(alpha = 0.15f))
-                        .padding(top = padding.calculateTopPadding() + 20.dp, bottom = 40.dp),
-                    contentAlignment = Alignment.Center
+                        .height(300.dp)
                 ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        // Icono Grande y Temático
-                        Icon(
-                            imageVector = getIconForAction(item.tipoAccion),
-                            contentDescription = null,
-                            tint = GreenPrimary,
-                            modifier = Modifier
-                                .size(80.dp)
-                                .background(Color.White, CircleShape)
-                                .padding(16.dp)
-                        )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    colors = listOf(GreenPrimary, GreenPrimary.copy(alpha = 0.6f))
+                                )
+                            )
+                    )
+
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White,
+                            shadowElevation = 8.dp,
+                            modifier = Modifier.size(100.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = getIconForAction(item.tipoAccion),
+                                    contentDescription = null,
+                                    tint = GreenPrimary,
+                                    modifier = Modifier.size(50.dp)
+                                )
+                            }
+                        }
                         Spacer(Modifier.height(16.dp))
-                        // Título Grande
                         Text(
                             text = item.tipoAccion.uppercase(),
                             style = MaterialTheme.typography.headlineMedium,
                             fontWeight = FontWeight.Black,
-                            color = GreenPrimary,
-                            textAlign = TextAlign.Center
+                            color = Color.White,
+                            letterSpacing = 1.sp
                         )
-                        Spacer(Modifier.height(8.dp))
-                        // Fecha con estilo
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Rounded.CalendarToday, null, tint = MaterialTheme.colorScheme.secondary, modifier = Modifier.size(16.dp))
-                            Spacer(Modifier.width(8.dp))
-                            Text(
-                                text = formattedDate,
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.secondary
-                            )
-                        }
                     }
                 }
 
-                // --- CONTENIDO PRINCIPAL ---
-                Column(modifier = Modifier.padding(24.dp)) {
-                    // Tarjeta de Descripción Moderna
-                    OutlinedCard(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.outlinedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                // --- TARJETA DE CONTENIDO ---
+                Column(
+                    modifier = Modifier
+                        .offset(y = (-40).dp)
+                        .padding(horizontal = 20.dp)
+                ) {
+                    ElevatedCard(
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column(modifier = Modifier.padding(20.dp)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(Icons.Rounded.Description, null, tint = GreenPrimary)
-                                Spacer(Modifier.width(12.dp))
-                                Text("Detalles de la actividad", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-                            }
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp), color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f))
+                        Column(Modifier.padding(24.dp)) {
+                            Text("Ficha Técnica", style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+                            Spacer(Modifier.height(16.dp))
 
-                            if (item.descripcion.isNotBlank()) {
-                                Text(
-                                    text = item.descripcion,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    lineHeight = 24.sp,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
-                                )
-                            } else {
-                                Text(
-                                    text = "Sin descripción añadida.",
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.secondary,
-                                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
-                                )
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                                InfoItem(icon = Icons.Rounded.CalendarToday, label = "Fecha", value = formattedDate)
+                                InfoItem(icon = Icons.Rounded.Grass, label = "Ubicación", value = bancalAsociado?.nombreCultivo ?: "Bancal ${bancalAsociado?.fila ?: "-"}-${bancalAsociado?.columna ?: "-"}")
                             }
                         }
                     }
-                    // Espacio extra al final para que el FAB no tape contenido
-                    Spacer(Modifier.height(80.dp))
+
+                    Spacer(Modifier.height(24.dp))
+
+                    Text(
+                        text = "Notas del Agricultor",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(Modifier.height(12.dp))
+
+                    Surface(
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = item.descripcion.ifBlank { "No se han añadido notas adicionales para esta tarea." },
+                            style = MaterialTheme.typography.bodyLarge,
+                            lineHeight = 28.sp,
+                            modifier = Modifier.padding(20.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(Modifier.height(100.dp))
                 }
             }
         }
     }
 
-    // Dialogo de eliminación (igual que antes, funcional)
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            icon = { Icon(Icons.Rounded.DeleteForever, null, tint = RedDanger) },
-            title = { Text("¿Eliminar tarea permanentemente?") },
-            text = { Text("Esta acción no se puede deshacer y la información se perderá.") },
+            icon = { Icon(Icons.Rounded.Warning, null, tint = RedDanger) },
+            title = { Text("Eliminar Registro") },
+            text = { Text("¿Estás seguro? Esta acción borrará permanentemente la tarea del historial.") },
             confirmButton = {
                 Button(
                     onClick = { viewModel.eliminarEntradaDiario(taskId); navController.popBackStack() },
                     colors = ButtonDefaults.buttonColors(containerColor = RedDanger)
-                ) {
-                    Text("Eliminar")
-                }
+                ) { Text("Confirmar") }
             },
-            dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text("Cancelar")
-                }
-            }
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancelar") } }
         )
     }
 }
 
-// Helper para elegir el icono según el texto de la acción
+@Composable
+fun InfoItem(icon: ImageVector, label: String, value: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .background(GreenPrimary.copy(alpha = 0.1f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(icon, null, tint = GreenPrimary, modifier = Modifier.size(20.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        Column {
+            Text(label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
 @Composable
 fun getIconForAction(actionType: String): ImageVector {
     return when (actionType.uppercase().trim()) {
@@ -204,7 +254,7 @@ fun getIconForAction(actionType: String): ImageVector {
         "RIEGO" -> Icons.Rounded.WaterDrop
         "COSECHA" -> Icons.Rounded.Agriculture
         "PODA" -> Icons.Rounded.ContentCut
-        "FERTILIZANTE" -> Icons.Rounded.Science
+        "FERTILIZANTE", "ABONADO" -> Icons.Rounded.Science
         "TRASPLANTE" -> Icons.Rounded.MoveDown
         else -> Icons.Rounded.EventNote
     }

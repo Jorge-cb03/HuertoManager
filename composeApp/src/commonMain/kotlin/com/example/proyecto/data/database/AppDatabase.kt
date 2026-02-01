@@ -21,7 +21,7 @@ import com.example.proyecto.data.database.entity.AlertaEntity
         EntradaDiarioEntity::class,
         AlertaEntity::class
     ],
-    version = 7
+    version = 8
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun jardineraDao(): JardineraDao

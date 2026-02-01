@@ -23,7 +23,13 @@ sealed class BottomNavItem(val resource: StringResource, val icon: ImageVector, 
 
 @Composable
 fun BottomMenu(navController: NavController) {
-    val items = listOf(BottomNavItem.Home, BottomNavItem.Garden, BottomNavItem.Diary, BottomNavItem.Products, BottomNavItem.Profile)
+    val items = listOf(
+        BottomNavItem.Home,
+        BottomNavItem.Garden,
+        BottomNavItem.Diary,
+        BottomNavItem.Products,
+        BottomNavItem.Profile
+    )
 
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -31,18 +37,31 @@ fun BottomMenu(navController: NavController) {
 
         items.forEach { item ->
             val title = stringResource(item.resource)
-            val isSelected = currentRoute == item.route || (item is BottomNavItem.Garden && currentRoute?.startsWith("garden") == true)
+
+            // MEJORA: Marcamos el icono como seleccionado incluso si estamos en una sub-pantalla (añadir/editar)
+            val isSelected = when (item) {
+                BottomNavItem.Home -> currentRoute == AppScreens.Home || currentRoute == AppScreens.Alerts
+                BottomNavItem.Garden -> currentRoute?.contains("garden") == true
+                BottomNavItem.Diary -> currentRoute?.contains("diary") == true
+                BottomNavItem.Products -> currentRoute?.contains("product") == true
+                BottomNavItem.Profile -> currentRoute == AppScreens.Profile || currentRoute == AppScreens.About
+            }
 
             NavigationBarItem(
                 icon = { Icon(item.icon, contentDescription = title) },
                 label = { Text(title) },
                 selected = isSelected,
                 onClick = {
+                    // NAVEGACIÓN PRIORITARIA
                     navController.navigate(item.route) {
-                        // FIX: Esta línea evita que el botón Home se quede pillado
-                        popUpTo(AppScreens.Home) { saveState = true }
+                        // Limpiamos la pila hasta el Home para cerrar cualquier sub-ventana abierta
+                        popUpTo(AppScreens.Home) {
+                            saveState = false // NO guardamos el estado de la ventana de "añadir/editar"
+                        }
+                        // Evita duplicar la pantalla si ya estás en la raíz de la sección
                         launchSingleTop = true
-                        restoreState = true
+                        // NO restauramos el estado para forzar que aparezca la vista principal (lista/calendario)
+                        restoreState = false
                     }
                 }
             )

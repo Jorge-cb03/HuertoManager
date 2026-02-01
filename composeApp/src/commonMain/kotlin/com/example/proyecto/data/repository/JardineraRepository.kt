@@ -4,7 +4,7 @@ import com.example.proyecto.data.database.AppDatabase
 import com.example.proyecto.data.database.entity.*
 import kotlinx.coroutines.flow.first
 
-// --- CLASES LOCALES (Sustituyen a las de la API eliminada) ---
+// --- CLASES LOCALES ---
 data class PerenualImage(
     val regularUrl: String?,
     val mediumUrl: String? = null
@@ -16,7 +16,6 @@ data class PerenualSpecies(
     val scientificName: List<String>,
     val defaultImage: PerenualImage?
 )
-// -------------------------------------------------------------
 
 class JardineraRepository(private val db: AppDatabase) {
     private val jardineraDao = db.jardineraDao()
@@ -25,16 +24,21 @@ class JardineraRepository(private val db: AppDatabase) {
     private val diarioDao = db.entradaDiarioDao()
     private val alertDao = db.alertDao()
 
-    // --- GESTIÓN DE ALERTAS (CORREGIDO: AlertEntity -> AlertaEntity) ---
+    // --- GESTIÓN DE ALERTAS ---
     fun getAlerts() = alertDao.getAllAlerts()
-
-    // FIX: Se cambia AlertEntity por AlertaEntity para coincidir con la base de datos
     suspend fun insertAlert(alert: AlertaEntity) = alertDao.insertAlert(alert)
     suspend fun updateAlert(alert: AlertaEntity) = alertDao.updateAlert(alert)
     suspend fun deleteAlert(alert: AlertaEntity) = alertDao.deleteAlert(alert)
 
+    // --- DIARIO (EDICIÓN Y BORRADO) ---
+    suspend fun getEntradaDiarioById(id: Long) = diarioDao.getEntradaById(id)
+    suspend fun eliminarEntradaDiario(id: Long) = diarioDao.deleteById(id)
+    suspend fun insertarEntradaDiario(e: EntradaDiarioEntity) = diarioDao.insertEntrada(e)
+    fun getTodoElHistorial() = diarioDao.getAllEntradas()
+    fun getHistorialBancal(id: Long) = diarioDao.getDiarioByBancal(id)
+
     // ===================================================================================
-    // CATÁLOGO MAESTRO (LOCAL - FUENTE DE VERDAD)
+    // CATÁLOGO MAESTRO (DATOS COMPLETOS PARA LA FICHA)
     // ===================================================================================
     data class FichaCultivo(
         val id: Int,
@@ -44,9 +48,9 @@ class JardineraRepository(private val db: AppDatabase) {
         val riegoDias: Int,
         val sol: String,
         val germinacion: String,
-        val amigos: String,
-        val enemigos: String,
-        val consejo: String
+        val amigos: String, // Campo necesario para GardenSlotDetailScreen
+        val enemigos: String, // Campo necesario para GardenSlotDetailScreen
+        val consejo: String // Campo necesario para GardenSlotDetailScreen
     )
 
     private val catalogoMaestro = listOf(
@@ -64,6 +68,8 @@ class JardineraRepository(private val db: AppDatabase) {
         FichaCultivo(12, "Fresa", "Fragaria", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRiEqDgTImHMG_JCK0YuhyvzSaql86IlM4Saw&s", 2, "Sol/Sombra", "20-30 días", "Ajo, Espinaca", "Repollo", "Usa paja en el suelo para proteger el fruto.")
     )
 
+    fun getFichaCompleta(id: Int): FichaCultivo? = catalogoMaestro.find { it.id == id }
+
     // Búsqueda usando el catálogo local
     suspend fun buscarCultivosOnline(query: String): List<PerenualSpecies> {
         val q = query.lowercase().trim()
@@ -77,6 +83,33 @@ class JardineraRepository(private val db: AppDatabase) {
                     defaultImage = PerenualImage(it.imagenUrl, null)
                 )
             }
+    }
+
+    // --- MÉTODOS CRUD JARDINERAS/PRODUCTOS ---
+    fun getJardineras() = jardineraDao.getJardinerasActivas()
+    fun getJardinerasArchivadas() = jardineraDao.getJardinerasArchivadas()
+    fun getBancales(id: Long) = bancalDao.getBancalesByJardinera(id)
+    suspend fun getBancalById(id: Long) = bancalDao.getBancalById(id)
+    suspend fun setEstadoFuncionalBancal(id: Long, f: Boolean) { bancalDao.getBancalById(id)?.let { bancalDao.insertOrUpdateBancal(it.copy(esFuncional = f)) } }
+    fun getProductos() = productoDao.getAllProductos()
+    suspend fun getProductoById(id: Long) = productoDao.getProductoById(id)
+    suspend fun insertarProducto(p: ProductoEntity) = productoDao.insertProducto(p)
+    suspend fun eliminarProducto(id: Long) = productoDao.deleteProductoById(id)
+
+    suspend fun registrarRiego(id: Long, l: Double) { diarioDao.insertEntrada(EntradaDiarioEntity(bancalId = id, tipoAccion = "RIEGO", descripcion = "Riego: $l L.", fecha = System.currentTimeMillis())) }
+
+    suspend fun registrarTratamiento(id: Long, pId: Long, cant: Double, t: String) {
+        val p = productoDao.getProductoById(pId) ?: return
+        val nuevo = p.stock - cant
+        if (nuevo <= 0) productoDao.deleteProductoById(p.id) else productoDao.updateProducto(p.copy(stock = nuevo))
+        diarioDao.insertEntrada(EntradaDiarioEntity(bancalId = id, tipoAccion = t, descripcion = "$t: $cant de ${p.nombre}", fecha = System.currentTimeMillis()))
+    }
+
+    suspend fun cosecharBancal(id: Long) {
+        bancalDao.getBancalById(id)?.let { b ->
+            bancalDao.insertOrUpdateBancal(b.copy(perenualId = null, nombreCultivo = null, imagenUrl = null, fechaSiembra = null, frecuenciaRiegoDias = null, necesidadSol = null))
+            diarioDao.insertEntrada(EntradaDiarioEntity(bancalId = id, tipoAccion = "COSECHA", descripcion = "Cosechado", fecha = System.currentTimeMillis()))
+        }
     }
 
     suspend fun plantarEnBancal(bancalId: Long, localId: Int) {
@@ -103,38 +136,21 @@ class JardineraRepository(private val db: AppDatabase) {
         productoDao.updateProducto(productoLocal.copy(stock = productoLocal.stock - 1.0))
     }
 
-    fun getFichaCompleta(id: Int): FichaCultivo? = catalogoMaestro.find { it.id == id }
-
-    // --- MÉTODOS CRUD ESTÁNDAR ---
-    fun getJardineras() = jardineraDao.getJardinerasActivas()
-    fun getJardinerasArchivadas() = jardineraDao.getJardinerasArchivadas()
-    fun getBancales(id: Long) = bancalDao.getBancalesByJardinera(id)
-    suspend fun getBancalById(id: Long) = bancalDao.getBancalById(id)
-    suspend fun setEstadoFuncionalBancal(id: Long, f: Boolean) { bancalDao.getBancalById(id)?.let { bancalDao.insertOrUpdateBancal(it.copy(esFuncional = f)) } }
-    fun getProductos() = productoDao.getAllProductos()
-    suspend fun getProductoById(id: Long) = productoDao.getProductoById(id)
-    suspend fun insertarProducto(p: ProductoEntity) = productoDao.insertProducto(p)
-    suspend fun eliminarProducto(id: Long) = productoDao.deleteProductoById(id)
-    fun getTodoElHistorial() = diarioDao.getAllEntradas()
-    fun getHistorialBancal(id: Long) = diarioDao.getDiarioByBancal(id)
-    suspend fun insertarEntradaDiario(e: EntradaDiarioEntity) = diarioDao.insertEntrada(e)
-
-    // Métodos para Diario Detail y Delete
-    suspend fun getEntradaDiarioById(id: Long) = diarioDao.getEntradaById(id)
-    suspend fun eliminarEntradaDiario(id: Long) = diarioDao.deleteById(id)
-
-    suspend fun registrarRiego(id: Long, l: Double) { diarioDao.insertEntrada(EntradaDiarioEntity(bancalId = id, tipoAccion = "RIEGO", descripcion = "Riego: $l L.", fecha = System.currentTimeMillis())) }
-    suspend fun registrarTratamiento(id: Long, pId: Long, cant: Double, t: String) {
-        val p = productoDao.getProductoById(pId) ?: return
-        val nuevo = p.stock - cant
-        if (nuevo <= 0) productoDao.deleteProductoById(p.id) else productoDao.updateProducto(p.copy(stock = nuevo))
-        diarioDao.insertEntrada(EntradaDiarioEntity(bancalId = id, tipoAccion = t, descripcion = "$t: $cant de ${p.nombre}", fecha = System.currentTimeMillis()))
-    }
-    suspend fun cosecharBancal(id: Long) { bancalDao.getBancalById(id)?.let { b -> bancalDao.insertOrUpdateBancal(b.copy(perenualId = null, nombreCultivo = null, imagenUrl = null, fechaSiembra = null, frecuenciaRiegoDias = null, necesidadSol = null)); diarioDao.insertEntrada(EntradaDiarioEntity(bancalId = id, tipoAccion = "COSECHA", descripcion = "Cosechado", fecha = System.currentTimeMillis())) } }
     suspend fun crearJardineraConBancales(n: String, f: Int, c: Int) { val id = jardineraDao.insertJardinera(JardineraEntity(nombre = n, filas = f, columnas = c)); syncBancales(id, f, c) }
     suspend fun actualizarJardinera(j: JardineraEntity) { jardineraDao.updateJardinera(j); syncBancales(j.id, j.filas, j.columnas) }
     suspend fun archivarJardinera(j: JardineraEntity) = jardineraDao.updateJardinera(j.copy(estaArchivada = true))
     suspend fun desarchivarJardinera(j: JardineraEntity) = jardineraDao.updateJardinera(j.copy(estaArchivada = false))
     suspend fun regarTodaLaJardinera(jId: Long) { bancalDao.getBancalesByJardinera(jId).first().filter { it.perenualId != null }.forEach { registrarRiego(it.id, 1.0) } }
-    private suspend fun syncBancales(id: Long, f: Int, c: Int) { bancalDao.deleteBancalesFueraDeRango(id, f, c); val actuales = bancalDao.getBancalesByJardinera(id).first(); for (r in 0 until f) { for (ci in 0 until c) { if (actuales.none { it.fila == r && it.columna == ci }) { bancalDao.insertOrUpdateBancal(BancalEntity(jardineraId = id, fila = r, columna = ci)) } } } }
+
+    private suspend fun syncBancales(id: Long, f: Int, c: Int) {
+        bancalDao.deleteBancalesFueraDeRango(id, f, c)
+        val actuales = bancalDao.getBancalesByJardinera(id).first()
+        for (r in 0 until f) {
+            for (ci in 0 until c) {
+                if (actuales.none { it.fila == r && it.columna == ci }) {
+                    bancalDao.insertOrUpdateBancal(BancalEntity(jardineraId = id, fila = r, columna = ci))
+                }
+            }
+        }
+    }
 }

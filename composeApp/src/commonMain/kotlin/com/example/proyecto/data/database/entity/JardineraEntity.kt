@@ -9,5 +9,6 @@ data class JardineraEntity(
     val nombre: String,
     val filas: Int = 4,
     val columnas: Int = 2,
-    val estaArchivada: Boolean = false
+    val estaArchivada: Boolean = false,
+    val esFavorita: Boolean = false
 )
