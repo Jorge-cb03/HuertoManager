@@ -3,6 +3,7 @@ package com.example.proyecto.data.repository
 import com.example.proyecto.data.database.AppDatabase
 import com.example.proyecto.data.database.entity.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.Flow
 
 // --- CLASES LOCALES ---
 data class PerenualImage(
@@ -23,6 +24,13 @@ class JardineraRepository(private val db: AppDatabase) {
     private val productoDao = db.productoDao()
     private val diarioDao = db.entradaDiarioDao()
     private val alertDao = db.alertDao()
+    private val usuarioDao = db.usuarioDao()
+
+    // --- GESTIÓN DE USUARIO (PERFIL) ---
+    fun getUsuarioActivo(): Flow<UsuarioEntity?> = usuarioDao.getUsuario()
+    suspend fun guardarUsuario(nombre: String, email: String, foto: ByteArray?) {
+        usuarioDao.saveUsuario(UsuarioEntity(id = 1, nombre = nombre, email = email, fotoPerfil = foto))
+    }
 
     // --- GESTIÓN DE ALERTAS ---
     fun getAlerts() = alertDao.getAllAlerts()
@@ -38,7 +46,7 @@ class JardineraRepository(private val db: AppDatabase) {
     fun getHistorialBancal(id: Long) = diarioDao.getDiarioByBancal(id)
 
     // ===================================================================================
-    // CATÁLOGO MAESTRO (DATOS COMPLETOS PARA LA FICHA)
+    // CATÁLOGO MAESTRO
     // ===================================================================================
     data class FichaCultivo(
         val id: Int,
@@ -48,9 +56,9 @@ class JardineraRepository(private val db: AppDatabase) {
         val riegoDias: Int,
         val sol: String,
         val germinacion: String,
-        val amigos: String, // Campo necesario para GardenSlotDetailScreen
-        val enemigos: String, // Campo necesario para GardenSlotDetailScreen
-        val consejo: String // Campo necesario para GardenSlotDetailScreen
+        val amigos: String,
+        val enemigos: String,
+        val consejo: String
     )
 
     private val catalogoMaestro = listOf(
@@ -70,22 +78,14 @@ class JardineraRepository(private val db: AppDatabase) {
 
     fun getFichaCompleta(id: Int): FichaCultivo? = catalogoMaestro.find { it.id == id }
 
-    // Búsqueda usando el catálogo local
     suspend fun buscarCultivosOnline(query: String): List<PerenualSpecies> {
         val q = query.lowercase().trim()
         return catalogoMaestro
             .filter { it.nombre.lowercase().contains(q) }
-            .map {
-                PerenualSpecies(
-                    id = it.id,
-                    commonName = it.nombre,
-                    scientificName = listOf(it.cientifico),
-                    defaultImage = PerenualImage(it.imagenUrl, null)
-                )
-            }
+            .map { PerenualSpecies(id = it.id, commonName = it.nombre, scientificName = listOf(it.cientifico), defaultImage = PerenualImage(it.imagenUrl, null)) }
     }
 
-    // --- MÉTODOS CRUD JARDINERAS/PRODUCTOS ---
+    // --- MÉTODOS CRUD ---
     fun getJardineras() = jardineraDao.getJardinerasActivas()
     fun getJardinerasArchivadas() = jardineraDao.getJardinerasArchivadas()
     fun getBancales(id: Long) = bancalDao.getBancalesByJardinera(id)
@@ -112,6 +112,7 @@ class JardineraRepository(private val db: AppDatabase) {
         }
     }
 
+    // --- CORRECCIÓN AQUÍ: BORRAR PRODUCTO AL PLANTAR SI LLEGA A 0 ---
     suspend fun plantarEnBancal(bancalId: Long, localId: Int) {
         val productoLocal = productoDao.getProductoByPerenualId(localId) ?: return
         if (productoLocal.stock <= 0) return
@@ -133,7 +134,14 @@ class JardineraRepository(private val db: AppDatabase) {
                 fecha = System.currentTimeMillis()
             ))
         }
-        productoDao.updateProducto(productoLocal.copy(stock = productoLocal.stock - 1.0))
+
+        // Comprobar si al restar se queda en 0 o menos para eliminarlo
+        val nuevoStock = productoLocal.stock - 1.0
+        if (nuevoStock <= 0) {
+            productoDao.deleteProductoById(productoLocal.id)
+        } else {
+            productoDao.updateProducto(productoLocal.copy(stock = nuevoStock))
+        }
     }
 
     suspend fun crearJardineraConBancales(n: String, f: Int, c: Int) { val id = jardineraDao.insertJardinera(JardineraEntity(nombre = n, filas = f, columnas = c)); syncBancales(id, f, c) }

@@ -90,11 +90,15 @@ fun AddDiaryEntryScreen(
     var selectedType by remember { mutableStateOf(initialType ?: taskTypes[0]) }
     var waterAmount by remember { mutableStateOf(initialWater) }
 
+    // --- CÁMARA Y GALERÍA ---
     var diaryPhotoBytes by remember { mutableStateOf<ByteArray?>(null) }
     var showPhotoOptions by remember { mutableStateOf(false) }
+
+    // Inicializamos el launcher del MediaManager
     val launcher = MediaManager.rememberLauncher { bytes ->
-        if (bytes != null) diaryPhotoBytes = bytes
-        showPhotoOptions = false
+        if (bytes != null) {
+            diaryPhotoBytes = bytes
+        }
     }
 
     var showSuccessDialog by remember { mutableStateOf(false) }
@@ -109,6 +113,9 @@ fun AddDiaryEntryScreen(
                 title = ent.tipoAccion
                 description = ent.descripcion
                 selectedType = if(taskTypes.contains(ent.tipoAccion)) ent.tipoAccion else taskTypes.last()
+
+                // Cargar foto si existe
+                diaryPhotoBytes = ent.foto
 
                 val bancal = viewModel.getBancalById(ent.bancalId)
                 bancal?.let { b ->
@@ -213,15 +220,19 @@ fun AddDiaryEntryScreen(
 
             // SECCIÓN 4: FOTO
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Surface(modifier = Modifier.weight(1f).height(100.dp).clip(RoundedCornerShape(16.dp)).clickable { showPhotoOptions = true }, color = MaterialTheme.colorScheme.surfaceVariant, border = BorderStroke(1.dp, if (diaryPhotoBytes != null) GreenPrimary else Color.Transparent)) {
+                Surface(
+                    modifier = Modifier.weight(1f).height(100.dp).clip(RoundedCornerShape(16.dp)).clickable { showPhotoOptions = true },
+                    color = MaterialTheme.colorScheme.surfaceVariant,
+                    border = BorderStroke(1.dp, if (diaryPhotoBytes != null) GreenPrimary else Color.Transparent)
+                ) {
                     Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(if (diaryPhotoBytes != null) Icons.Outlined.Image else Icons.Outlined.CameraAlt, null, tint = if (diaryPhotoBytes != null) GreenPrimary else Color.Gray)
-                        Text(if (diaryPhotoBytes != null) "Foto añadida" else "Cámara", fontSize = 12.sp)
+                        Text(if (diaryPhotoBytes != null) "Foto añadida (Toca para cambiar)" else "Añadir Foto", fontSize = 12.sp)
                     }
                 }
             }
 
-            // --- BOTÓN GUARDAR (Lógica completa) ---
+            // --- BOTÓN GUARDAR ---
             Button(
                 onClick = {
                     if (title.isNotBlank() && selectedBancalIds.isNotEmpty()) {
@@ -230,18 +241,26 @@ fun AddDiaryEntryScreen(
                         val idToUpdate = taskId?.toLongOrNull() ?: 0L
 
                         if (isEditMode) {
-                            // UPDATE
+                            // UPDATE: Pasamos la foto
                             viewModel.guardarEntradaDiario(
                                 id = idToUpdate,
                                 bancalId = selectedBancalIds.first(),
                                 tipo = selectedType,
                                 desc = finalDesc,
-                                fecha = dateMillis
+                                fecha = dateMillis,
+                                foto = diaryPhotoBytes // <--- FOTO
                             )
                         } else {
-                            // CREATE
+                            // CREATE: Pasamos la foto
                             selectedBancalIds.forEach { id ->
-                                viewModel.guardarEntradaDiario(bancalId = id, tipo = selectedType, desc = finalDesc, fecha = dateMillis, id = 0L)
+                                viewModel.guardarEntradaDiario(
+                                    bancalId = id,
+                                    tipo = selectedType,
+                                    desc = finalDesc,
+                                    fecha = dateMillis,
+                                    id = 0L,
+                                    foto = diaryPhotoBytes // <--- FOTO
+                                )
                             }
                         }
                         showSuccessDialog = true
@@ -254,6 +273,49 @@ fun AddDiaryEntryScreen(
                 Text(if (isEditMode) "Actualizar" else "Registrar en ${selectedBancalIds.size} bancales", fontWeight = FontWeight.Bold)
             }
         }
+    }
+
+    // --- DIÁLOGO DE SELECCIÓN DE IMAGEN ---
+    if (showPhotoOptions) {
+        AlertDialog(
+            onDismissRequest = { showPhotoOptions = false },
+            icon = { Icon(Icons.Outlined.CameraAlt, null) },
+            title = { Text("Añadir imagen") },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Button(
+                        onClick = {
+                            launcher.launchCamera()
+                            showPhotoOptions = false
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Outlined.CameraAlt, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Hacer foto")
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            launcher.launchGallery()
+                            showPhotoOptions = false
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Outlined.Image, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Abrir galería")
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showPhotoOptions = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 
     if (showSuccessDialog) {

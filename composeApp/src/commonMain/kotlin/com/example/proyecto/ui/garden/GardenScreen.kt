@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,18 +18,20 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush // Importante para el degradado
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import coil3.compose.AsyncImage
 import com.example.proyecto.data.database.entity.BancalEntity
-import com.example.proyecto.ui.StatusPill
-import com.example.proyecto.ui.home.ShortcutManager
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
-import org.jetbrains.compose.resources.stringResource
-import huertomanager.composeapp.generated.resources.*
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,7 +44,6 @@ fun GardenScreen(
     val jardineras by viewModel.jardineras.collectAsState()
     var currentGardenIndex by remember { mutableStateOf(0) }
 
-    // SINCRONIZACIÓN: Si venimos por ID, buscamos la posición real en la lista
     LaunchedEffect(jardineras, initialGardenId) {
         if (initialGardenId != 0L) {
             val index = jardineras.indexOfFirst { it.id == initialGardenId }
@@ -55,6 +59,8 @@ fun GardenScreen(
     var showAddGardenDialog by remember { mutableStateOf(false) }
     var showGardenMenu by remember { mutableStateOf(false) }
     var tempName by remember { mutableStateOf("") }
+
+    // ESTADOS PARA PLANTAR
     var selectedSlotIdForPlanting by remember { mutableStateOf<Long?>(null) }
     var showPlantSelector by remember { mutableStateOf(false) }
 
@@ -90,7 +96,6 @@ fun GardenScreen(
                     Button(onClick = { showAddGardenDialog = true }) { Text("Crear mi primera jardinera") }
                 }
             } else {
-                // CONTROLES DE FILAS Y COLUMNAS
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
                     shape = RoundedCornerShape(16.dp),
@@ -118,9 +123,11 @@ fun GardenScreen(
                             onToggleVisibility = { viewModel.toggleBancal(bancal.id, !bancal.esFuncional) },
                             onClick = {
                                 if (bancal.perenualId == null) {
+                                    // SI ESTÁ VACÍO -> ABRIMOS SELECTOR DE SEMILLAS
                                     selectedSlotIdForPlanting = bancal.id
                                     showPlantSelector = true
                                 } else {
+                                    // SI TIENE PLANTA -> DETALLE
                                     navController.navigate("garden_slot_detail/${bancal.id}")
                                 }
                             }
@@ -146,19 +153,48 @@ fun GardenScreen(
         )
     }
 
+    // --- SELECTOR DE SEMILLAS REAL (NO HARDCODED) ---
     if (showPlantSelector) {
+        val semillas by viewModel.semillasDisponibles.collectAsState(initial = emptyList())
+
         AlertDialog(
             onDismissRequest = { showPlantSelector = false },
-            title = { Text("Plantar") },
+            title = { Text("Elige qué plantar") },
             text = {
-                Column {
-                    ListItem(headlineContent = { Text("Tomate Cherry") }, leadingContent = { Icon(Icons.Filled.Eco, null, tint = GreenPrimary) }, modifier = Modifier.clickable {
-                        selectedSlotIdForPlanting?.let { viewModel.plantar(it, 2) }
-                        showPlantSelector = false
-                    })
+                if (semillas.isEmpty()) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.Spa, null, tint = Color.Gray, modifier = Modifier.size(40.dp))
+                        Spacer(Modifier.height(8.dp))
+                        Text("No tienes semillas en inventario.", textAlign = TextAlign.Center)
+                        Text("Añádelas en la sección Productos.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                    }
+                } else {
+                    LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
+                        items(semillas) { semilla ->
+                            ListItem(
+                                headlineContent = { Text(semilla.nombre) },
+                                supportingContent = { Text("Stock: ${semilla.stock}") },
+                                leadingContent = {
+                                    if(semilla.imagenUrl != null) {
+                                        AsyncImage(model = semilla.imagenUrl, contentDescription = null, modifier = Modifier.size(40.dp).clip(CircleShape), contentScale = ContentScale.Crop)
+                                    } else {
+                                        Icon(Icons.Default.Spa, null, tint = GreenPrimary)
+                                    }
+                                },
+                                modifier = Modifier.clickable {
+                                    // Plantamos y cerramos
+                                    selectedSlotIdForPlanting?.let {
+                                        viewModel.plantar(it, semilla.perenualId ?: semilla.id.toInt())
+                                    }
+                                    showPlantSelector = false
+                                }
+                            )
+                            HorizontalDivider()
+                        }
+                    }
                 }
             },
-            confirmButton = { TextButton(onClick = { showPlantSelector = false }) { Text("Cerrar") } }
+            confirmButton = { TextButton(onClick = { showPlantSelector = false }) { Text("Cancelar") } }
         )
     }
 }
@@ -175,6 +211,7 @@ fun DimensionControl(label: String, value: Int, onValueChange: (Int) -> Unit) {
     }
 }
 
+// --- TARJETA DE BANCAL REDISEÑADA ---
 @Composable
 fun BancalSlotCard(bancal: BancalEntity, onToggleVisibility: () -> Unit, onClick: () -> Unit) {
     var showMenu by remember { mutableStateOf(false) }
@@ -182,22 +219,102 @@ fun BancalSlotCard(bancal: BancalEntity, onToggleVisibility: () -> Unit, onClick
 
     Card(
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = if (!bancal.esFuncional) Color.Transparent else if (isEmpty) MaterialTheme.colorScheme.surfaceVariant.copy(0.4f) else MaterialTheme.colorScheme.surface),
-        modifier = Modifier.fillMaxWidth().aspectRatio(1f).clickable(enabled = bancal.esFuncional) { onClick() }
+        colors = CardDefaults.cardColors(
+            containerColor = if (!bancal.esFuncional) Color.Transparent
+            else if (isEmpty) MaterialTheme.colorScheme.surfaceVariant.copy(0.4f)
+            else MaterialTheme.colorScheme.surface
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(1f)
+            .clickable(enabled = bancal.esFuncional) { onClick() }
             .then(if (!bancal.esFuncional) Modifier.border(1.dp, Color.Gray.copy(0.3f), RoundedCornerShape(12.dp)) else Modifier)
     ) {
         Box(Modifier.fillMaxSize()) {
-            IconButton(onClick = { showMenu = true }, modifier = Modifier.align(Alignment.TopEnd).size(24.dp)) { Icon(Icons.Default.MoreVert, null, modifier = Modifier.size(14.dp), tint = Color.Gray) }
-            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                DropdownMenuItem(text = { Text(if(bancal.esFuncional) "Ocultar" else "Mostrar") }, onClick = { showMenu = false; onToggleVisibility() })
-            }
+
             if (bancal.esFuncional) {
-                Column(Modifier.fillMaxSize(), Arrangement.Center, Alignment.CenterHorizontally) {
-                    if (isEmpty) { Icon(Icons.Default.Add, null, tint = Color.Gray.copy(0.5f)) }
-                    else { Icon(Icons.Default.Eco, null, tint = GreenPrimary); Text(bancal.nombreCultivo ?: "", fontSize = 10.sp, maxLines = 1) }
+                // CONTENIDO DEL BANCAL
+                if (isEmpty) {
+                    // ESTADO VACÍO: Icono + en el centro
+                    Icon(
+                        Icons.Default.Add,
+                        null,
+                        tint = Color.Gray.copy(0.5f),
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                } else {
+                    // ESTADO OCUPADO: Imagen a pantalla completa
+                    if (bancal.imagenUrl != null) {
+                        AsyncImage(
+                            model = bancal.imagenUrl,
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                        // Degradado negro abajo para que se lea el texto
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                                        startY = 100f // Ajusta el inicio del degradado
+                                    )
+                                )
+                        )
+                    } else {
+                        // Si no hay imagen url, ponemos un icono central
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Icon(Icons.Default.Eco, null, tint = GreenPrimary, modifier = Modifier.size(40.dp))
+                        }
+                    }
+
+                    // NOMBRE DEL PRODUCTO: Abajo y centrado
+                    Text(
+                        text = bancal.nombreCultivo ?: "",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (bancal.imagenUrl != null) Color.White else MaterialTheme.colorScheme.onSurface,
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(horizontal = 4.dp, vertical = 8.dp)
+                    )
                 }
             } else {
+                // ESTADO OCULTO
                 Icon(Icons.Default.Block, null, tint = Color.Gray.copy(0.2f), modifier = Modifier.align(Alignment.Center))
+            }
+
+            // BOTÓN DE MENÚ (Top End)
+            // Le ponemos un fondo circular semitransparente para que se vea sobre las fotos
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(4.dp)
+            ) {
+                IconButton(
+                    onClick = { showMenu = true },
+                    modifier = Modifier
+                        .size(24.dp)
+                        .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                ) {
+                    Icon(
+                        Icons.Default.MoreVert,
+                        null,
+                        modifier = Modifier.size(16.dp),
+                        tint = Color.White
+                    )
+                }
+
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(if(bancal.esFuncional) "Ocultar" else "Mostrar") },
+                        onClick = { showMenu = false; onToggleVisibility() }
+                    )
+                }
             }
         }
     }

@@ -9,14 +9,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
@@ -33,6 +35,7 @@ import com.example.proyecto.data.database.entity.ProductoEntity
 import com.example.proyecto.data.database.entity.EntradaDiarioEntity
 import com.example.proyecto.ui.HuertaCard
 import com.example.proyecto.ui.theme.GreenPrimary
+import com.example.proyecto.ui.theme.RedDanger
 import org.koin.compose.viewmodel.koinViewModel
 import kotlinx.datetime.*
 
@@ -45,6 +48,11 @@ fun GardenSlotDetailScreen(
 ) {
     val id = bancalId.toLongOrNull() ?: 0L
     var activeActionType by remember { mutableStateOf<String?>(null) }
+
+    // ESTADOS PARA EL MENÚ Y DIÁLOGOS
+    var showMenu by remember { mutableStateOf(false) }
+    var showHarvestDialog by remember { mutableStateOf(false) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
 
     // ESTADO
     val bancalState = remember { mutableStateOf<BancalEntity?>(null) }
@@ -67,19 +75,71 @@ fun GardenSlotDetailScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(bancal?.nombreCultivo ?: "Detalle del Bancal") },
-                navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.Default.ArrowBack, null) } }
+                title = { }, // Título vacío porque ahora está en la imagen
+                navigationIcon = {
+                    // Fondo oscuro circular para que se vea el botón de atrás sobre la foto
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                    ) {
+                        Icon(Icons.Default.ArrowBack, null, tint = Color.White)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                actions = {
+                    // --- MENÚ DE TRES PUNTOS ---
+                    if (bancal?.nombreCultivo != null) {
+                        Box(modifier = Modifier.padding(8.dp)) {
+                            IconButton(
+                                onClick = { showMenu = true },
+                                modifier = Modifier.background(Color.Black.copy(alpha = 0.3f), CircleShape)
+                            ) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "Opciones", tint = Color.White)
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Cosechar") },
+                                    leadingIcon = { Icon(Icons.Default.ShoppingBasket, null, tint = GreenPrimary) },
+                                    onClick = {
+                                        showMenu = false
+                                        showHarvestDialog = true
+                                    }
+                                )
+                                HorizontalDivider()
+                                DropdownMenuItem(
+                                    text = { Text("Eliminar", color = RedDanger) },
+                                    leadingIcon = { Icon(Icons.Default.Delete, null, tint = RedDanger) },
+                                    onClick = {
+                                        showMenu = false
+                                        showDeleteDialog = true
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
             )
-        }
+        },
+        // Hacemos que el contenido pase por debajo de la TopBar
+        contentWindowInsets = WindowInsets(0,0,0,0)
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // FOTO
-            Box(modifier = Modifier.fillMaxWidth().height(250.dp).background(MaterialTheme.colorScheme.surfaceVariant)) {
+            // --- FOTO DE CABECERA GRANDE ---
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(300.dp) // Hacemos la imagen más alta
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+            ) {
                 if (!displayImageUrl.isNullOrBlank()) {
                     AsyncImage(
                         model = displayImageUrl,
@@ -91,31 +151,62 @@ fun GardenSlotDetailScreen(
                     )
                 } else {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Eco, null, modifier = Modifier.size(80.dp), tint = GreenPrimary.copy(alpha=0.3f))
+                        Icon(Icons.Default.Eco, null, modifier = Modifier.size(100.dp), tint = GreenPrimary.copy(alpha=0.3f))
                     }
                 }
-            }
 
-            Column(modifier = Modifier.padding(20.dp)) {
+                // DEGRADADO OSCURO EN LA PARTE INFERIOR (Para que se lea el texto)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
+                                startY = 300f
+                            )
+                        )
+                )
 
-                // 1. INFO BÁSICA
-                HuertaCard {
-                    Column {
-                        Text(bancal?.nombreCultivo ?: "Sin Cultivo", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                // TEXTO DEL BANCAL (Abajo Centro)
+                Column(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(bottom = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = bancal?.nombreCultivo ?: "Bancal Vacío",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
 
-                        if (bancal?.frecuenciaRiegoDias != null || bancal?.necesidadSol != null) {
-                            Spacer(Modifier.height(12.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                                bancal?.frecuenciaRiegoDias?.let { BadgeInfo(Icons.Default.WaterDrop, "Riego: $it d") }
-                                bancal?.necesidadSol?.let { BadgeInfo(Icons.Default.WbSunny, it) }
+                    // Mostrar info extra (Sol/Riego) en blanco si existe
+                    if (bancal?.nombreCultivo != null && (bancal.frecuenciaRiegoDias != null || bancal.necesidadSol != null)) {
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                            bancal.frecuenciaRiegoDias?.let {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.WaterDrop, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                    Text(" $it d", color = Color.White, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                            bancal.necesidadSol?.let {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.WbSunny, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                                    Text(" $it", color = Color.White, fontWeight = FontWeight.Bold)
+                                }
                             }
                         }
                     }
                 }
+            }
 
-                // 2. GUÍA DE CULTIVO
+            // --- CONTENIDO INFERIOR ---
+            Column(modifier = Modifier.padding(20.dp)) {
+
+                // 2. GUÍA DE CULTIVO (Si hay datos)
                 if (fichaTecnica != null) {
-                    Spacer(Modifier.height(20.dp))
                     Text("Guía de Cultivo", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(Modifier.height(10.dp))
 
@@ -151,22 +242,28 @@ fun GardenSlotDetailScreen(
                             }
                         }
                     }
+                } else if (bancal?.nombreCultivo == null) {
+                    // Mensaje si está vacío
+                    Box(modifier = Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
+                        Text("Este bancal está disponible para plantar.", color = Color.Gray, fontStyle = FontStyle.Italic)
+                    }
                 }
 
                 // 3. ACCIONES Y DIARIO
-                Spacer(Modifier.height(24.dp))
-                Text("Acciones Rápidas", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Spacer(Modifier.height(12.dp))
-                Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(10.dp)) {
-                    QuickActionItem("Regar", Icons.Default.WaterDrop, Modifier.weight(1f)) { activeActionType = "RIEGO" }
+                if (bancal?.nombreCultivo != null) {
+                    Spacer(Modifier.height(24.dp))
+                    Text("Acciones Rápidas", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Spacer(Modifier.height(12.dp))
+                    Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(10.dp)) {
+                        QuickActionItem("Regar", Icons.Default.WaterDrop, Modifier.weight(1f)) { activeActionType = "RIEGO" }
 
-                    // FIX: Reemplazado registrarAccionRapida por guardarEntradaDiario
-                    QuickActionItem("Podar", Icons.Default.ContentCut, Modifier.weight(1f)) {
-                        viewModel.guardarEntradaDiario(id, "PODA", "Poda realizada", System.currentTimeMillis())
+                        QuickActionItem("Podar", Icons.Default.ContentCut, Modifier.weight(1f)) {
+                            viewModel.guardarEntradaDiario(id, "PODA", "Poda realizada", System.currentTimeMillis())
+                        }
+
+                        QuickActionItem("Tratar", Icons.Default.BugReport, Modifier.weight(1f)) { activeActionType = "ANTIPLAGA" }
+                        QuickActionItem("Abonar", Icons.Default.Science, Modifier.weight(1f)) { activeActionType = "ABONADO" }
                     }
-
-                    QuickActionItem("Tratar", Icons.Default.BugReport, Modifier.weight(1f)) { activeActionType = "ANTIPLAGA" }
-                    QuickActionItem("Abonar", Icons.Default.Science, Modifier.weight(1f)) { activeActionType = "ABONADO" }
                 }
 
                 Spacer(Modifier.height(30.dp))
@@ -194,11 +291,82 @@ fun GardenSlotDetailScreen(
                         )
                     }
                 }
+
+                // Espacio extra al final
+                Spacer(Modifier.height(80.dp))
             }
         }
     }
 
     if (activeActionType != null) ActionDialog(activeActionType!!, viewModel, id) { activeActionType = null }
+
+    // --- DIÁLOGO DE COSECHA ---
+    if (showHarvestDialog && bancal != null) {
+        var cantidadCosecha by remember { mutableStateOf("") }
+
+        AlertDialog(
+            onDismissRequest = { showHarvestDialog = false },
+            icon = { Icon(Icons.Default.ShoppingBasket, null, tint = GreenPrimary) },
+            title = { Text("Registrar Cosecha") },
+            text = {
+                Column {
+                    Text("¡Enhorabuena! ¿Cuánto has cosechado?")
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = cantidadCosecha,
+                        onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) cantidadCosecha = it },
+                        label = { Text("Cantidad (unidades o kg)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        "Se añadirá a tu inventario de productos.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val cantidad = cantidadCosecha.toDoubleOrNull() ?: 0.0
+                        viewModel.cosecharConCantidad(bancal, cantidad)
+                        showHarvestDialog = false
+                        navController.popBackStack()
+                    },
+                    enabled = cantidadCosecha.isNotEmpty(),
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
+                ) { Text("Guardar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showHarvestDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
+
+    // --- DIÁLOGO DE ELIMINAR ---
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            icon = { Icon(Icons.Default.Warning, null, tint = RedDanger) },
+            title = { Text("¿Eliminar planta?") },
+            text = { Text("Se perderán los datos del cultivo actual y no se registrará producción. ¿Estás seguro?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.eliminarPlanta(id)
+                        showDeleteDialog = false
+                        navController.popBackStack()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = RedDanger)
+                ) { Text("Eliminar") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
+            }
+        )
+    }
 }
 
 @Composable

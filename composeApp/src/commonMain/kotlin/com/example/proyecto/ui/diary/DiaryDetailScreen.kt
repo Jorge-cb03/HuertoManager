@@ -1,5 +1,7 @@
 package com.example.proyecto.ui.diary
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,7 +18,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -112,22 +116,41 @@ fun DiaryDetailScreen(navController: NavController, taskId: Long, viewModel: Gar
                     .fillMaxSize()
                     .verticalScroll(scrollState)
             ) {
-                // --- CABECERA VISUAL ---
+                // --- CABECERA VISUAL (HERO HEADER) ---
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(300.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(GreenPrimary, GreenPrimary.copy(alpha = 0.6f))
+                    if (item.foto != null) {
+                        // SI HAY FOTO: Mostrar imagen
+                        val bitmap = BitmapFactory.decodeByteArray(item.foto, 0, item.foto.size).asImageBitmap()
+                        Image(
+                            bitmap = bitmap,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize()
+                        )
+                        // Velo oscuro para legibilidad
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.4f))
+                        )
+                    } else {
+                        // SI NO HAY FOTO: Degradado verde original
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(
+                                    Brush.verticalGradient(
+                                        colors = listOf(GreenPrimary, GreenPrimary.copy(alpha = 0.6f))
+                                    )
                                 )
-                            )
-                    )
+                        )
+                    }
 
+                    // Contenido central (Icono y Título)
                     Column(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally

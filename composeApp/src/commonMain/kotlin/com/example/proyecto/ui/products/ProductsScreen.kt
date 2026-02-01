@@ -29,7 +29,10 @@ fun ProductsScreen(navController: NavController, viewModel: GardenViewModel = ko
     val productos = productosState.value
     var searchQuery by remember { mutableStateOf("") }
 
-    val filteredProducts = productos.filter { it.nombre.contains(searchQuery, ignoreCase = true) }
+    // CAMBIO CLAVE: Filtramos también que el stock sea mayor que 0
+    val filteredProducts = productos.filter {
+        it.nombre.contains(searchQuery, ignoreCase = true) && it.stock > 0
+    }
 
     Scaffold(
         floatingActionButton = {
@@ -66,7 +69,7 @@ fun ProductsScreen(navController: NavController, viewModel: GardenViewModel = ko
 
             if (filteredProducts.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No hay productos. ¡Añade uno!", color = Color.Gray)
+                    Text("No hay productos disponibles.", color = Color.Gray)
                 }
             } else {
                 LazyVerticalGrid(
@@ -88,11 +91,10 @@ fun ProductsScreen(navController: NavController, viewModel: GardenViewModel = ko
                                 },
                                 // ACCIONES DE STOCK
                                 onIncrease = {
-                                    // Asume que tienes esta función en el ViewModel
                                     viewModel.updateStock(producto.id, producto.stock + 1)
                                 },
                                 onDecrease = {
-                                    // Evitamos stock negativo
+                                    // Si bajamos a 0, updateStock se encarga de borrarlo
                                     val newStock = (producto.stock - 1).coerceAtLeast(0.0)
                                     viewModel.updateStock(producto.id, newStock)
                                 }
@@ -153,14 +155,12 @@ fun ProductItemCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), // Un poco más de elevación
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
-            // Aumentamos el padding interno para hacer la tarjeta visualmente más grande
             modifier = Modifier.padding(16.dp)
         ) {
-            // Icono según tipo (simplificado)
             val icon = when {
                 type.contains("SEED", true) -> Icons.Default.Grass
                 type.contains("FERTILIZER", true) -> Icons.Default.Science
@@ -172,18 +172,17 @@ fun ProductItemCard(
                 imageVector = icon,
                 contentDescription = null,
                 tint = GreenPrimary,
-                modifier = Modifier.size(28.dp) // Icono un poco más grande
+                modifier = Modifier.size(28.dp)
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Nombre del producto
             Text(
                 text = name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 maxLines = 1,
-                fontSize = 18.sp // Fuente un poco más grande
+                fontSize = 18.sp
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -194,7 +193,7 @@ fun ProductItemCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Botón Menos (desactivado si stock es 0)
+                // Botón Menos
                 FilledIconButton(
                     onClick = onDecrease,
                     enabled = quantity > 0,
@@ -204,13 +203,13 @@ fun ProductItemCard(
                     Icon(Icons.Default.Remove, contentDescription = "Disminuir", modifier = Modifier.size(16.dp))
                 }
 
-                // Cantidad de Stock (Destacada)
+                // Cantidad de Stock
                 Text(
-                    text = if (quantity % 1.0 == 0.0) quantity.toInt().toString() else quantity.toString(), // Muestra enteros sin decimales .0
+                    text = if (quantity % 1.0 == 0.0) quantity.toInt().toString() else quantity.toString(),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
-                    color = GreenPrimary, // "Marca rojo" (Usamos el color primario de la marca)
-                    modifier = Modifier.weight(1f) // Ocupa el espacio central
+                    color = if (quantity <= 3.0) RedDanger else GreenPrimary, // Rojo si <= 3
+                    modifier = Modifier.weight(1f)
                 )
 
                 // Botón Más

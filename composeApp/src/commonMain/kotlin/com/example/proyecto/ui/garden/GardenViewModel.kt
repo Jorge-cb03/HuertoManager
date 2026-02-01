@@ -17,6 +17,11 @@ class GardenViewModel(private val repository: JardineraRepository) : ViewModel()
     val historialGeneral: StateFlow<List<EntradaDiarioEntity>> = repository.getTodoElHistorial()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+
+    // NUEVO: Estado del Usuario
+    val usuarioActivo: StateFlow<UsuarioEntity?> = repository.getUsuarioActivo()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
     val alerts: StateFlow<List<AlertaEntity>> = repository.getAlerts()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
@@ -30,10 +35,22 @@ class GardenViewModel(private val repository: JardineraRepository) : ViewModel()
             repository.eliminarEntradaDiario(id)
         }
     }
+    fun guardarPerfil(nombre: String, email: String, foto: ByteArray?) {
+        viewModelScope.launch {
+            repository.guardarUsuario(nombre, email, foto)
+        }
+    }
 
     // --- FUNCIÓN GUARDAR MODIFICADA (SOPORTA EDICIÓN) ---
     // Acepta 'id' opcional. Si es 0 crea nueva, si es > 0 actualiza.
-    fun guardarEntradaDiario(bancalId: Long, tipo: String, desc: String, fecha: Long, id: Long = 0L) {
+    fun guardarEntradaDiario(
+        bancalId: Long,
+        tipo: String,
+        desc: String,
+        fecha: Long,
+        foto: ByteArray? = null,
+        id: Long = 0L
+    ) {
         viewModelScope.launch {
             repository.insertarEntradaDiario(
                 EntradaDiarioEntity(
@@ -41,12 +58,47 @@ class GardenViewModel(private val repository: JardineraRepository) : ViewModel()
                     bancalId = bancalId,
                     tipoAccion = tipo,
                     descripcion = desc,
-                    fecha = fecha
+                    fecha = fecha,
+                    foto = foto
                 )
             )
         }
     }
+    // --- NUEVO: FILTRO DE SEMILLAS PARA PLANTAR ---
+    // Solo productos con stock > 0 y categoría SEED
+    val semillasDisponibles: Flow<List<ProductoEntity>> = repository.getProductos().map { list ->
+        list.filter { p ->
+            val esSemilla = try { ProductType.valueOf(p.categoria) == ProductType.SEED } catch (e: Exception) { false }
+            esSemilla && p.stock > 0
+        }
+    }
 
+    // --- NUEVO: COSECHA INTELIGENTE ---
+    fun cosecharConCantidad(bancal: BancalEntity, cantidad: Double) {
+        viewModelScope.launch {
+            repository.cosecharBancal(bancal.id)
+
+            // Buscamos si existe el producto para sumar stock o lo creamos
+            val nombre = bancal.nombreCultivo ?: "Cosecha"
+            val productos = repository.getProductos().first()
+            val prodExistente = productos.find { it.nombre.equals(nombre, true) && it.categoria != "SEED" }
+
+            if (prodExistente != null) {
+                repository.insertarProducto(prodExistente.copy(stock = prodExistente.stock + cantidad))
+            } else {
+                repository.insertarProducto(ProductoEntity(nombre = nombre, categoria = "VEGETABLE", stock = cantidad, imagenUrl = bancal.imagenUrl))
+            }
+
+            guardarEntradaDiario(bancal.id, "COSECHA", "Recolectado: $cantidad de $nombre", System.currentTimeMillis())
+        }
+    }
+
+    fun eliminarPlanta(bancalId: Long) {
+        viewModelScope.launch {
+            repository.cosecharBancal(bancalId) // Limpia el slot
+            guardarEntradaDiario(bancalId, "ELIMINACION", "Planta eliminada sin producción", System.currentTimeMillis())
+        }
+    }
     // --- RESTO DE FUNCIONES (INTACTAS) ---
     fun addAlert(title: String, desc: String, epochMillis: Long) = viewModelScope.launch { repository.insertAlert(AlertaEntity(title = title, description = desc, dateTimeEpochMillis = epochMillis)) }
     fun updateAlert(id: Long, title: String, desc: String, epochMillis: Long) = viewModelScope.launch { repository.updateAlert(AlertaEntity(id = id, title = title, description = desc, dateTimeEpochMillis = epochMillis)) }

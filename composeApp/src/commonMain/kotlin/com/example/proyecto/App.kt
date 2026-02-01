@@ -3,7 +3,7 @@ package com.example.proyecto
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.*
 import com.example.proyecto.di.appModule
-import com.example.proyecto.ui.navigation.AppNavigation // Asegúrate de importar esto
+import com.example.proyecto.ui.navigation.AppNavigation
 import com.example.proyecto.ui.theme.AppTheme
 import org.koin.compose.KoinApplication
 
@@ -12,15 +12,17 @@ fun App() {
     KoinApplication(application = {
         modules(appModule)
     }) {
+        // Detectamos el tema del sistema al inicio
         val systemDark = isSystemInDarkTheme()
-        // Estado para controlar el tema (puedes expandirlo luego si quieres toggle manual)
-        val isDarkTheme by remember { mutableStateOf(systemDark) }
+
+        // FIX: Cambiado de 'val' a 'var' para que pueda modificarse
+        var isDarkTheme by remember { mutableStateOf(systemDark) }
 
         AppTheme(darkTheme = isDarkTheme) {
-            // CORREGIDO: Iniciar la navegación real en lugar de la pantalla de debug
+            // Pasamos el estado y la función para modificarlo
             AppNavigation(
                 isDarkTheme = isDarkTheme,
-                onToggleTheme = { /* Implementar lógica de toggle si se desea */ }
+                onToggleTheme = { newTheme -> isDarkTheme = newTheme } // FIX: Lógica de cambio activada
             )
         }
     }
