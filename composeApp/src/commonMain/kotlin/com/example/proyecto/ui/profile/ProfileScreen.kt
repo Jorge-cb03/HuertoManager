@@ -1,12 +1,13 @@
 package com.example.proyecto.ui.profile
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape // FIX: Importación añadida
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -17,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,6 +29,7 @@ import com.example.proyecto.ui.navigation.AppScreens
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
 import com.example.proyecto.util.MediaManager
+import com.example.proyecto.util.toImageBitmap // IMPORTANTE: La utilidad que creamos
 import org.jetbrains.compose.resources.stringResource
 import proyecto.composeapp.generated.resources.*
 
@@ -42,6 +45,7 @@ fun ProfileScreen(
     var showEditNameDialog by remember { mutableStateOf(false) }
     var tempName by remember { mutableStateOf("") }
 
+    // Este estado guarda los datos de la foto
     var profilePhotoBytes by remember { mutableStateOf<ByteArray?>(null) }
     var showPhotoOptions by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
@@ -68,6 +72,7 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(30.dp))
 
+        // --- CIRCULO DE LA FOTO ---
         Box(contentAlignment = Alignment.BottomEnd) {
             Surface(
                 modifier = Modifier
@@ -76,8 +81,29 @@ fun ProfileScreen(
                     .clickable { showPhotoOptions = true },
                 color = MaterialTheme.colorScheme.surfaceVariant
             ) {
-                Icon(Icons.Default.Person, null, modifier = Modifier.padding(20.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (profilePhotoBytes != null) {
+                    // CONVERTIMOS LOS BYTES A IMAGEN REAL
+                    val bitmap = remember(profilePhotoBytes) { profilePhotoBytes?.toImageBitmap() }
+                    if (bitmap != null) {
+                        Image(
+                            bitmap = bitmap,
+                            contentDescription = "Profile Photo",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop // Para que rellene el círculo perfectamente
+                        )
+                    }
+                } else {
+                    // Icono de persona si no hay foto
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.padding(20.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
+
+            // Botón flotante de la cámara
             Surface(
                 shape = CircleShape,
                 color = GreenPrimary,
@@ -106,6 +132,7 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(40.dp))
 
+        // --- RESTO DE AJUSTES ---
         Text(
             stringResource(Res.string.profile_section_prefs),
             style = MaterialTheme.typography.labelLarge,
@@ -122,7 +149,6 @@ fun ProfileScreen(
                 checked = isDarkTheme,
                 onCheckedChange = onToggleTheme
             )
-            // FIX: Parámetro alpha eliminado y movido al color
             HorizontalDivider(
                 modifier = Modifier.padding(vertical = 8.dp),
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.1f)
@@ -144,14 +170,9 @@ fun ProfileScreen(
 
         Button(
             onClick = { showLogoutDialog = true },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = RedDanger.copy(alpha = 0.1f),
-                contentColor = RedDanger
-            ),
-            shape = RoundedCornerShape(12.dp) // FIX: Ahora la referencia es válida
+            modifier = Modifier.fillMaxWidth().height(50.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = RedDanger.copy(alpha = 0.1f), contentColor = RedDanger),
+            shape = RoundedCornerShape(12.dp)
         ) {
             Icon(Icons.Default.Logout, null)
             Spacer(Modifier.width(8.dp))
@@ -161,22 +182,14 @@ fun ProfileScreen(
         Spacer(Modifier.height(100.dp))
     }
 
-    // DIÁLOGOS...
+    // --- DIÁLOGOS (Nombre, Foto, Logout) ---
     if (showEditNameDialog) {
         AlertDialog(
             onDismissRequest = { showEditNameDialog = false },
             title = { Text(stringResource(Res.string.profile_edit_title)) },
-            text = {
-                HuertaInput(tempName, { tempName = it }, stringResource(Res.string.profile_edit_name_hint), Icons.Default.Person)
-            },
-            confirmButton = {
-                Button(onClick = { if(tempName.isNotBlank()) userName = tempName; showEditNameDialog = false }) {
-                    Text(stringResource(Res.string.profile_edit_save))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showEditNameDialog = false }) { Text(stringResource(Res.string.profile_edit_cancel)) }
-            }
+            text = { HuertaInput(tempName, { tempName = it }, stringResource(Res.string.profile_edit_name_hint), Icons.Default.Person) },
+            confirmButton = { Button(onClick = { if(tempName.isNotBlank()) userName = tempName; showEditNameDialog = false }) { Text(stringResource(Res.string.profile_edit_save)) } },
+            dismissButton = { TextButton(onClick = { showEditNameDialog = false }) { Text(stringResource(Res.string.profile_edit_cancel)) } }
         )
     }
 
@@ -186,8 +199,8 @@ fun ProfileScreen(
             title = { Text(stringResource(Res.string.profile_change_photo)) },
             text = {
                 Column {
-                    ListItem(headlineContent = { Text("Cámara") }, leadingContent = { Icon(Icons.Default.PhotoCamera, null) }, modifier = Modifier.clickable { launcher.launchCamera() })
-                    ListItem(headlineContent = { Text("Galería") }, leadingContent = { Icon(Icons.Default.PhotoLibrary, null) }, modifier = Modifier.clickable { launcher.launchGallery() })
+                    ListItem(headlineContent = { Text("Cámara") }, leadingContent = { Icon(Icons.Default.PhotoCamera, null, tint = GreenPrimary) }, modifier = Modifier.clickable { launcher.launchCamera() })
+                    ListItem(headlineContent = { Text("Galería") }, leadingContent = { Icon(Icons.Default.PhotoLibrary, null, tint = GreenPrimary) }, modifier = Modifier.clickable { launcher.launchGallery() })
                 }
             },
             confirmButton = { TextButton(onClick = { showPhotoOptions = false }) { Text(stringResource(Res.string.dialog_cancel)) } }
@@ -200,12 +213,7 @@ fun ProfileScreen(
             title = { Text(stringResource(Res.string.dialog_logout_title)) },
             text = { Text(stringResource(Res.string.dialog_logout_msg)) },
             confirmButton = {
-                Button(onClick = {
-                    showLogoutDialog = false
-                    navController.navigate(AppScreens.Login) { popUpTo(AppScreens.Home) { inclusive = true } }
-                }, colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) {
-                    Text(stringResource(Res.string.dialog_confirm))
-                }
+                Button(onClick = { showLogoutDialog = false; navController.navigate(AppScreens.Login) { popUpTo(AppScreens.Home) { inclusive = true } } }, colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) { Text(stringResource(Res.string.dialog_confirm)) }
             },
             dismissButton = { TextButton(onClick = { showLogoutDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) } }
         )
