@@ -25,60 +25,41 @@ import org.koin.compose.viewmodel.koinViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductsScreen(navController: NavController, viewModel: GardenViewModel = koinViewModel()) {
-    // SOLUCIÓN: Eliminamos 'by' y usamos .value para evitar el error de inferencia de tipos
     val productosState = viewModel.getProductos().collectAsState(initial = emptyList())
     val productos = productosState.value
-
     var searchQuery by remember { mutableStateOf("") }
 
-    // Filtro en tiempo real por nombre
-    val filteredProducts = productos.filter {
-        it.nombre.contains(searchQuery, ignoreCase = true)
-    }
+    val filteredProducts = productos.filter { it.nombre.contains(searchQuery, ignoreCase = true) }
 
     Scaffold(
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { navController.navigate(AppScreens.AddProduct) },
-                containerColor = GreenPrimary
-            ) { Icon(Icons.Default.Add, contentDescription = "Añadir Producto", tint = Color.White) }
+            FloatingActionButton(onClick = { navController.navigate(AppScreens.AddProduct) }, containerColor = GreenPrimary) { Icon(Icons.Default.Add, null, tint = Color.White) }
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding).padding(horizontal = 20.dp)) {
-            Text(
-                text = "Mi Inventario",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(vertical = 16.dp)
-            )
+            Text(text = "Inventario", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, modifier = Modifier.padding(vertical = 16.dp))
 
-            // BARRA DE BÚSQUEDA
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
                 modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-                placeholder = { Text("Buscar semillas, abonos...") },
+                placeholder = { Text("Buscar...") },
                 leadingIcon = { Icon(Icons.Default.Search, null) },
                 shape = MaterialTheme.shapes.medium,
                 singleLine = true
             )
 
             if (filteredProducts.isEmpty()) {
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No se encontraron productos.", color = Color.Gray)
-                }
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Vacío", color = Color.Gray) }
             } else {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     items(filteredProducts) { producto ->
                         ProductItemCard(
                             producto = producto,
-                            onDelta = { delta ->
-                                // Actualiza el stock sumando el delta (1.0 o -1.0)
-                                viewModel.updateStock(producto.id, producto.stock + delta)
-                            },
+                            onDelta = { viewModel.updateStock(producto.id, producto.stock + it) },
                             onDelete = { viewModel.eliminarProducto(producto.id) },
                             onEdit = {
-                                // Navegación a la pantalla de edición usando el ID del producto
+                                // FIX: Usamos la función que añadimos en AppScreens
                                 navController.navigate(AppScreens.createProductDetailRoute(producto.id.toString()))
                             }
                         )
@@ -90,84 +71,18 @@ fun ProductsScreen(navController: NavController, viewModel: GardenViewModel = ko
 }
 
 @Composable
-fun ProductItemCard(
-    producto: ProductoEntity,
-    onEdit: () -> Unit,
-    onDelta: (Double) -> Unit,
-    onDelete: () -> Unit
-) {
-    // Determina la unidad de medida según la categoría
-    val unidad = when (producto.categoria) {
-        "FERTILIZER", "CHEMICAL" -> "kg/L"
-        else -> "uds"
-    }
-
+fun ProductItemCard(producto: ProductoEntity, onEdit: () -> Unit, onDelta: (Double) -> Unit, onDelete: () -> Unit) {
     HuertaCard {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onEdit() }
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Icono representativo
-            Surface(
-                Modifier.size(60.dp),
-                shape = MaterialTheme.shapes.medium,
-                color = GreenPrimary.copy(alpha = 0.1f)
-            ) {
-                Icon(Icons.Default.Eco, null, tint = GreenPrimary, modifier = Modifier.padding(12.dp))
-            }
-
+        Row(modifier = Modifier.fillMaxWidth().clickable { onEdit() }.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(Modifier.size(60.dp), shape = MaterialTheme.shapes.medium, color = GreenPrimary.copy(alpha = 0.1f)) { Icon(Icons.Default.Inventory, null, tint = GreenPrimary, modifier = Modifier.padding(12.dp)) }
             Spacer(Modifier.width(16.dp))
-
             Column(Modifier.weight(1f)) {
-                Text(producto.nombre, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(producto.categoria, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-                // Color rojo si el stock es bajo
-                Text(
-                    text = "Stock: ${producto.stock} $unidad",
-                    color = if (producto.stock < 5.0) Color.Red else GreenPrimary,
-                    fontWeight = FontWeight.Bold
-                )
+                Text(producto.nombre, fontWeight = FontWeight.Bold)
+                Text("Stock: ${producto.stock}", color = GreenPrimary, fontWeight = FontWeight.Bold)
             }
-
-            // ACCIONES RÁPIDAS (Stock y Menú)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { onDelta(-1.0) }) {
-                    Icon(Icons.Default.RemoveCircleOutline, contentDescription = "Restar", tint = Color.Gray)
-                }
-                IconButton(onClick = { onDelta(1.0) }) {
-                    Icon(Icons.Default.AddCircleOutline, contentDescription = "Sumar", tint = GreenPrimary)
-                }
-
-                var expanded by remember { mutableStateOf(false) }
-                Box {
-                    IconButton(onClick = { expanded = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "Opciones")
-                    }
-                    DropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Editar") },
-                            onClick = {
-                                expanded = false
-                                onEdit()
-                            },
-                            leadingIcon = { Icon(Icons.Default.Edit, null) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Eliminar", color = Color.Red) },
-                            onClick = {
-                                expanded = false
-                                onDelete()
-                            },
-                            leadingIcon = { Icon(Icons.Default.Delete, null, tint = Color.Red) }
-                        )
-                    }
-                }
+            Row {
+                IconButton(onClick = { onDelta(-1.0) }) { Icon(Icons.Default.RemoveCircleOutline, null) }
+                IconButton(onClick = { onDelta(1.0) }) { Icon(Icons.Default.AddCircleOutline, null, tint = GreenPrimary) }
             }
         }
     }

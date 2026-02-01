@@ -13,24 +13,17 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 
-// --- IMPORTS DE TODAS LAS PANTALLAS ---
 import com.example.proyecto.ui.components.BottomMenu
 import com.example.proyecto.ui.login.LoginScreen
 import com.example.proyecto.ui.login.RegisterScreen
 import com.example.proyecto.ui.home.HomeScreen
-import com.example.proyecto.ui.products.ProductsScreen
-import com.example.proyecto.ui.products.ProductDetailScreen
-import com.example.proyecto.ui.products.AddProductScreen
-import com.example.proyecto.ui.garden.GardenScreen
-import com.example.proyecto.ui.garden.GardenSlotDetailScreen
-import com.example.proyecto.ui.diary.DiaryScreen
-import com.example.proyecto.ui.diary.AddDiaryEntryScreen
-import com.example.proyecto.ui.profile.ProfileScreen
-import com.example.proyecto.ui.profile.AboutScreen
+import com.example.proyecto.ui.products.*
+import com.example.proyecto.ui.garden.*
+import com.example.proyecto.ui.diary.*
+import com.example.proyecto.ui.profile.*
 import com.example.proyecto.ui.alerts.AlertsScreen
 
 object AppScreens {
-    // Rutas simples
     const val Login = "login"
     const val Register = "register"
     const val Home = "home"
@@ -41,25 +34,22 @@ object AppScreens {
     const val About = "about"
     const val AddProduct = "add_product"
 
-    // Rutas con argumentos
-    const val Garden = "garden/{gardenIndex}"
-    fun createGardenRoute(index: Int) = "garden/$index"
+    // RUTAS CON PARÁMETROS
+    const val Garden = "garden/{gardenId}"
+    fun createGardenRoute(id: Long) = "garden/$id"
+
+    const val GardenSlotDetail = "garden_slot_detail/{bancalId}"
+    fun createSlotDetailRoute(id: String) = "garden_slot_detail/$id"
 
     const val ProductDetail = "product_detail/{productId}"
-    fun createProductDetailRoute(productId: String) = "product_detail/$productId"
-
-    const val GardenSlotDetail = "garden_slot_detail/{slotName}"
-    fun createSlotDetailRoute(slotName: String) = "garden_slot_detail/$slotName"
+    fun createProductDetailRoute(id: String) = "product_detail/$id"
 
     const val AddDiaryEntry = "add_diary_entry/{dateMillis}"
     fun createAddDiaryRoute(dateMillis: Long) = "add_diary_entry/$dateMillis"
 }
 
 @Composable
-fun AppNavigation(
-    isDarkTheme: Boolean,
-    onToggleTheme: (Boolean) -> Unit
-) {
+fun AppNavigation(isDarkTheme: Boolean, onToggleTheme: (Boolean) -> Unit) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -75,81 +65,56 @@ fun AppNavigation(
             startDestination = AppScreens.Login,
             modifier = Modifier.padding(innerPadding)
         ) {
-            // 1. LOGIN
             composable(AppScreens.Login) {
                 LoginScreen(
                     onLoginSuccess = { navController.navigate(AppScreens.Home) { popUpTo(AppScreens.Login) { inclusive = true } } },
                     onNavigateToRegister = { navController.navigate(AppScreens.Register) },
-                    // CORRECCIÓN: Añadida la lambda de Google
-                    onGoogleLoginClick = {
-                        // Lógica de Google aquí
-                    }
+                    onGoogleLoginClick = { }
                 )
             }
-
-            // 2. REGISTRO
             composable(AppScreens.Register) {
-                RegisterScreen(
-                    onRegisterSuccess = { navController.navigate(AppScreens.Home) { popUpTo(AppScreens.Register) { inclusive = true } } },
-                    onBackToLogin = { navController.popBackStack() }
-                )
+                RegisterScreen(onRegisterSuccess = { navController.navigate(AppScreens.Home) { popUpTo(AppScreens.Register) { inclusive = true } } }, onBackToLogin = { navController.popBackStack() })
             }
 
             composable(AppScreens.Home) { HomeScreen(navController) }
             composable(AppScreens.Alerts) { AlertsScreen(navController) }
 
-            // 5. JARDINERA
             composable(
                 route = AppScreens.Garden,
-                arguments = listOf(navArgument("gardenIndex") { type = NavType.IntType })
+                arguments = listOf(navArgument("gardenId") { type = NavType.LongType })
             ) { backStackEntry ->
-                // Obtenemos el índice, pero GardenScreen aún no lo usa, así que llamamos a la pantalla sin argumentos extra.
-                val index = backStackEntry.arguments?.getInt("gardenIndex") ?: 0
-                GardenScreen(navController = navController) // CORREGIDO: Eliminado initialGardenIndex
+                val id = backStackEntry.arguments?.getLong("gardenId") ?: 0L
+                GardenScreen(navController = navController, initialGardenId = id)
             }
 
-            // 6. DETALLE HUECO (ID Real)
             composable(
                 route = AppScreens.GardenSlotDetail,
-                arguments = listOf(navArgument("slotName") { type = NavType.StringType })
+                arguments = listOf(navArgument("bancalId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val id = backStackEntry.arguments?.getString("slotName") ?: "0"
+                val id = backStackEntry.arguments?.getString("bancalId") ?: "0"
                 GardenSlotDetailScreen(navController = navController, bancalId = id)
             }
 
             composable(AppScreens.Diary) { DiaryScreen(navController) }
-
-            // 8. AÑADIR ENTRADA DIARIO
             composable(
                 route = AppScreens.AddDiaryEntry,
                 arguments = listOf(navArgument("dateMillis") { type = NavType.LongType })
             ) { backStackEntry ->
-                val dateMillis = backStackEntry.arguments?.getLong("dateMillis") ?: 0L
-                AddDiaryEntryScreen(
-                    navController = navController,
-                    initialDateMillis = dateMillis
-                )
+                AddDiaryEntryScreen(navController = navController, initialDateMillis = backStackEntry.arguments?.getLong("dateMillis") ?: 0L)
             }
 
             composable(AppScreens.Products) { ProductsScreen(navController) }
-
-            // 10. AÑADIR PRODUCTO
-            composable(AppScreens.AddProduct) { AddProductScreen(navController = navController) }
-
-            // 11. DETALLE PRODUCTO
+            composable(AppScreens.AddProduct) { AddProductScreen(navController) }
             composable(
                 route = AppScreens.ProductDetail,
                 arguments = listOf(navArgument("productId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val productId = backStackEntry.arguments?.getString("productId") ?: "0"
-                ProductDetailScreen(navController = navController, productId = productId)
+                val id = backStackEntry.arguments?.getString("productId") ?: "0"
+                ProductDetailScreen(navController = navController, productId = id)
             }
 
-            composable(AppScreens.Profile) {
-                ProfileScreen(navController = navController, isDarkTheme = isDarkTheme, onToggleTheme = onToggleTheme)
-            }
-
-            composable(AppScreens.About) { AboutScreen(navController = navController) }
+            composable(AppScreens.Profile) { ProfileScreen(navController, isDarkTheme, onToggleTheme) }
+            composable(AppScreens.About) { AboutScreen(navController) }
         }
     }
 }

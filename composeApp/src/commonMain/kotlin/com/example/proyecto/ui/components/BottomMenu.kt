@@ -7,7 +7,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.proyecto.ui.navigation.AppScreens
 import org.jetbrains.compose.resources.StringResource
@@ -16,7 +15,6 @@ import huertomanager.composeapp.generated.resources.*
 
 sealed class BottomNavItem(val resource: StringResource, val icon: ImageVector, val route: String) {
     object Home : BottomNavItem(Res.string.menu_home, Icons.Default.Home, AppScreens.Home)
-    // FIX: Navegamos a "garden/0" para que no pete buscando el argumento
     object Garden : BottomNavItem(Res.string.menu_garden, Icons.Default.Eco, "garden/0")
     object Diary : BottomNavItem(Res.string.menu_diary, Icons.Default.Edit, AppScreens.Diary)
     object Products : BottomNavItem(Res.string.menu_products, Icons.Default.ShoppingCart, AppScreens.Products)
@@ -25,13 +23,7 @@ sealed class BottomNavItem(val resource: StringResource, val icon: ImageVector, 
 
 @Composable
 fun BottomMenu(navController: NavController) {
-    val items = listOf(
-        BottomNavItem.Home,
-        BottomNavItem.Garden,
-        BottomNavItem.Diary,
-        BottomNavItem.Products,
-        BottomNavItem.Profile
-    )
+    val items = listOf(BottomNavItem.Home, BottomNavItem.Garden, BottomNavItem.Diary, BottomNavItem.Products, BottomNavItem.Profile)
 
     NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -39,7 +31,6 @@ fun BottomMenu(navController: NavController) {
 
         items.forEach { item ->
             val title = stringResource(item.resource)
-            // Comprobamos si la ruta actual empieza por "garden" para marcarlo como seleccionado
             val isSelected = currentRoute == item.route || (item is BottomNavItem.Garden && currentRoute?.startsWith("garden") == true)
 
             NavigationBarItem(
@@ -48,10 +39,8 @@ fun BottomMenu(navController: NavController) {
                 selected = isSelected,
                 onClick = {
                     navController.navigate(item.route) {
-                        // FIX: Esto evita que el Home se quede pillado al limpiar la pila correctamente
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
+                        // FIX: Esta línea evita que el botón Home se quede pillado
+                        popUpTo(AppScreens.Home) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
                     }
