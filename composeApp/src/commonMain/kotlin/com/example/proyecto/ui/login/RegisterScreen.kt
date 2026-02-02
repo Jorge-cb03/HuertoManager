@@ -1,6 +1,7 @@
 package com.example.proyecto.ui.login
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
@@ -15,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import com.example.proyecto.ui.theme.GreenPrimary
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.stringResource
+import huertomanager.composeapp.generated.resources.*
 
 @Composable
 fun RegisterScreen(onRegisterSuccess: () -> Unit, onBackToLogin: () -> Unit) {
@@ -28,24 +31,52 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onBackToLogin: () -> Unit) {
     Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Box(contentAlignment = Alignment.Center) {
             Column(modifier = Modifier.padding(32.dp).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(text = "Crear Cuenta", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+
+                Text(
+                    text = stringResource(Res.string.register_title),
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = GreenPrimary
+                )
+
                 Spacer(Modifier.height(30.dp))
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Nombre") }, modifier = Modifier.fillMaxWidth())
-                Spacer(Modifier.height(15.dp))
-                OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text("Email") }, modifier = Modifier.fillMaxWidth())
-                Spacer(Modifier.height(15.dp))
+
                 OutlinedTextField(
-                    value = password, onValueChange = { password = it },
-                    label = { Text("Contraseña") },
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(Res.string.register_name)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(Modifier.height(15.dp))
+
+                OutlinedTextField(
+                    value = email,
+                    onValueChange = { email = it },
+                    label = { Text(stringResource(Res.string.login_user_hint)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Spacer(Modifier.height(15.dp))
+
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text(stringResource(Res.string.login_pass_hint)) },
                     visualTransformation = if (passVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { passVisible = !passVisible }) {
                             Icon(if (passVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff, null)
                         }
                     },
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
                 )
+
                 Spacer(Modifier.height(30.dp))
+
                 Button(
                     onClick = {
                         scope.launch {
@@ -57,9 +88,21 @@ fun RegisterScreen(onRegisterSuccess: () -> Unit, onBackToLogin: () -> Unit) {
                     },
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary),
-                    enabled = !isLoading
-                ) { Text("Registrarse") }
-                TextButton(onClick = onBackToLogin) { Text("¿Ya tienes cuenta? Inicia sesión", color = GreenPrimary) }
+                    enabled = !isLoading,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text(stringResource(Res.string.register_btn))
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                TextButton(onClick = onBackToLogin) {
+                    Text(stringResource(Res.string.register_login_text), color = GreenPrimary)
+                }
             }
         }
     }

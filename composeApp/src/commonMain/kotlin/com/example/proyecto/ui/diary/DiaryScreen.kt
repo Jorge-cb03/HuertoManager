@@ -29,6 +29,8 @@ import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
 import kotlinx.datetime.*
 import org.koin.compose.viewmodel.koinViewModel
+import org.jetbrains.compose.resources.stringResource
+import huertomanager.composeapp.generated.resources.*
 
 @Composable
 fun DiaryScreen(navController: NavController, viewModel: GardenViewModel = koinViewModel()) {
@@ -46,7 +48,7 @@ fun DiaryScreen(navController: NavController, viewModel: GardenViewModel = koinV
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(20.dp)) {
-        Text("Diario de Campo", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = GreenPrimary)
+        Text(stringResource(Res.string.diary_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = GreenPrimary)
         Spacer(Modifier.height(20.dp))
 
         // --- CALENDARIO ---
@@ -77,24 +79,24 @@ fun DiaryScreen(navController: NavController, viewModel: GardenViewModel = koinV
 
         // --- LISTA DE TAREAS ---
         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-            Text(text = "Tareas del día", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Text(text = stringResource(Res.string.diary_today_tasks), fontWeight = FontWeight.Bold, fontSize = 18.sp)
             TextButton(onClick = {
                 val epoch = selectedDate.atStartOfDayIn(TimeZone.currentSystemDefault()).toEpochMilliseconds()
                 navController.navigate(AppScreens.createAddDiaryRoute(epoch))
             }) {
-                Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp)); Text("Añadir") }
+                Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp)); Text(stringResource(Res.string.diary_add_btn)) }
             }
         }
 
         if (entriesForSelectedDay.isEmpty()) {
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text("No hay tareas registradas este día.", color = Color.Gray) }
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Text(stringResource(Res.string.diary_no_tasks), color = Color.Gray) }
         } else {
             LazyColumn(modifier = Modifier.weight(1f), contentPadding = PaddingValues(vertical = 8.dp)) {
                 items(entriesForSelectedDay) { entrada ->
                     TimelineItem(
                         title = entrada.tipoAccion,
                         desc = entrada.descripcion,
-                        time = "Hecho",
+                        time = stringResource(Res.string.diary_status_done),
                         icon = when(entrada.tipoAccion) {
                             "RIEGO" -> Icons.Default.WaterDrop
                             "PODA" -> Icons.Default.ContentCut
@@ -156,12 +158,12 @@ fun TimelineItem(
                         IconButton(onClick = { showMenu = true }) { Icon(Icons.Default.MoreVert, null) }
                         DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                             DropdownMenuItem(
-                                text = { Text("Editar") },
+                                text = { Text(stringResource(Res.string.menu_edit)) },
                                 onClick = { showMenu = false; onEdit() },
                                 leadingIcon = { Icon(Icons.Default.Edit, null) }
                             )
                             DropdownMenuItem(
-                                text = { Text("Eliminar", color = Color.Red) },
+                                text = { Text(stringResource(Res.string.menu_delete), color = Color.Red) },
                                 onClick = { showMenu = false; onDelete() },
                                 leadingIcon = { Icon(Icons.Default.Delete, null, tint = Color.Red) }
                             )
@@ -182,10 +184,21 @@ fun getDaysInMonth(month: Int, year: Int): Int {
 
 fun getFirstDayOfWeek(month: Int, year: Int): Int { return LocalDate(year, month, 1).dayOfWeek.ordinal }
 
+@Composable
 fun getMonthName(monthNumber: Int): String {
-    return when(monthNumber) {
-        1 -> "Enero"; 2 -> "Febrero"; 3 -> "Marzo"; 4 -> "Abril"; 5 -> "Mayo"; 6 -> "Junio"
-        7 -> "Julio"; 8 -> "Agosto"; 9 -> "Septiembre"; 10 -> "Octubre"; 11 -> "Noviembre"; 12 -> "Diciembre"
-        else -> ""
+    val res = when(monthNumber) {
+        1 -> Res.string.month_1
+        2 -> Res.string.month_2
+        3 -> Res.string.month_3
+        4 -> Res.string.month_4
+        5 -> Res.string.month_5
+        6 -> Res.string.month_6
+        7 -> Res.string.month_7
+        8 -> Res.string.month_8
+        9 -> Res.string.month_9
+        10 -> Res.string.month_10
+        11 -> Res.string.month_11
+        else -> Res.string.month_12
     }
+    return stringResource(res)
 }

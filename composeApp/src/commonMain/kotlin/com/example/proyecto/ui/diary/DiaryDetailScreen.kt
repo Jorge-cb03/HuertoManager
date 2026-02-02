@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -32,7 +31,10 @@ import com.example.proyecto.ui.garden.GardenViewModel
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
 import kotlinx.datetime.*
+import org.jetbrains.compose.resources.stringResource
+import huertomanager.composeapp.generated.resources.*
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.compose.ui.graphics.asImageBitmap
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,10 +43,10 @@ fun DiaryDetailScreen(navController: NavController, taskId: Long, viewModel: Gar
     var bancalAsociado by remember { mutableStateOf<BancalEntity?>(null) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
 
     val scrollState = rememberScrollState()
 
-    // Carga de datos
     LaunchedEffect(taskId) {
         val tarea = viewModel.getEntradaDiarioById(taskId)
         entrada = tarea
@@ -78,7 +80,7 @@ fun DiaryDetailScreen(navController: NavController, taskId: Long, viewModel: Gar
                             modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Editar Registro") },
+                                text = { Text(stringResource(Res.string.diary_edit_record)) },
                                 leadingIcon = { Icon(Icons.Default.Edit, null) },
                                 onClick = {
                                     showMenu = false
@@ -89,7 +91,7 @@ fun DiaryDetailScreen(navController: NavController, taskId: Long, viewModel: Gar
                             )
                             HorizontalDivider()
                             DropdownMenuItem(
-                                text = { Text("Eliminar", color = RedDanger) },
+                                text = { Text(stringResource(Res.string.diary_delete_record), color = RedDanger) },
                                 leadingIcon = { Icon(Icons.Default.Delete, null, tint = RedDanger) },
                                 onClick = {
                                     showMenu = false
@@ -116,14 +118,13 @@ fun DiaryDetailScreen(navController: NavController, taskId: Long, viewModel: Gar
                     .fillMaxSize()
                     .verticalScroll(scrollState)
             ) {
-                // --- CABECERA VISUAL (HERO HEADER) ---
+                // --- CABECERA VISUAL ---
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(300.dp)
                 ) {
                     if (item.foto != null) {
-                        // SI HAY FOTO: Mostrar imagen
                         val bitmap = BitmapFactory.decodeByteArray(item.foto, 0, item.foto.size).asImageBitmap()
                         Image(
                             bitmap = bitmap,
@@ -131,14 +132,8 @@ fun DiaryDetailScreen(navController: NavController, taskId: Long, viewModel: Gar
                             contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
-                        // Velo oscuro para legibilidad
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = 0.4f))
-                        )
+                        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
                     } else {
-                        // SI NO HAY FOTO: Degradado verde original
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
@@ -150,7 +145,6 @@ fun DiaryDetailScreen(navController: NavController, taskId: Long, viewModel: Gar
                         )
                     }
 
-                    // Contenido central (Icono y Título)
                     Column(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
@@ -194,12 +188,12 @@ fun DiaryDetailScreen(navController: NavController, taskId: Long, viewModel: Gar
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(Modifier.padding(24.dp)) {
-                            Text("Ficha Técnica", style = MaterialTheme.typography.labelLarge, color = Color.Gray)
+                            Text(stringResource(Res.string.diary_detail_tech_sheet), style = MaterialTheme.typography.labelLarge, color = Color.Gray)
                             Spacer(Modifier.height(16.dp))
 
                             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                InfoItem(icon = Icons.Rounded.CalendarToday, label = "Fecha", value = formattedDate)
-                                InfoItem(icon = Icons.Rounded.Grass, label = "Ubicación", value = bancalAsociado?.nombreCultivo ?: "Bancal ${bancalAsociado?.fila ?: "-"}-${bancalAsociado?.columna ?: "-"}")
+                                InfoItem(icon = Icons.Rounded.CalendarToday, label = stringResource(Res.string.diary_detail_date), value = formattedDate)
+                                InfoItem(icon = Icons.Rounded.Grass, label = stringResource(Res.string.diary_detail_location), value = bancalAsociado?.nombreCultivo ?: "Bancal ${bancalAsociado?.fila ?: "-"}-${bancalAsociado?.columna ?: "-"}")
                             }
                         }
                     }
@@ -207,7 +201,7 @@ fun DiaryDetailScreen(navController: NavController, taskId: Long, viewModel: Gar
                     Spacer(Modifier.height(24.dp))
 
                     Text(
-                        text = "Notas del Agricultor",
+                        text = stringResource(Res.string.diary_detail_notes_title),
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
@@ -220,7 +214,7 @@ fun DiaryDetailScreen(navController: NavController, taskId: Long, viewModel: Gar
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
-                            text = item.descripcion.ifBlank { "No se han añadido notas adicionales para esta tarea." },
+                            text = item.descripcion.ifBlank { stringResource(Res.string.diary_detail_no_notes) },
                             style = MaterialTheme.typography.bodyLarge,
                             lineHeight = 28.sp,
                             modifier = Modifier.padding(20.dp),
@@ -238,15 +232,28 @@ fun DiaryDetailScreen(navController: NavController, taskId: Long, viewModel: Gar
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             icon = { Icon(Icons.Rounded.Warning, null, tint = RedDanger) },
-            title = { Text("Eliminar Registro") },
-            text = { Text("¿Estás seguro? Esta acción borrará permanentemente la tarea del historial.") },
+            title = { Text(stringResource(Res.string.diary_delete_record)) },
+            text = { Text(stringResource(Res.string.diary_delete_confirm_msg)) },
             confirmButton = {
                 Button(
-                    onClick = { viewModel.eliminarEntradaDiario(taskId); navController.popBackStack() },
+                    onClick = {
+                        viewModel.eliminarEntradaDiario(taskId)
+                        showDeleteConfirm = false
+                        showSuccessDialog = true
+                    },
                     colors = ButtonDefaults.buttonColors(containerColor = RedDanger)
-                ) { Text("Confirmar") }
+                ) { Text(stringResource(Res.string.btn_confirm)) }
             },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancelar") } }
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(Res.string.btn_cancel)) } }
+        )
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            title = { Text(stringResource(Res.string.dialog_success_title)) },
+            text = { Text(stringResource(Res.string.dialog_success_diary_deleted)) },
+            confirmButton = { Button(onClick = { showSuccessDialog = false; navController.popBackStack() }) { Text(stringResource(Res.string.dialog_btn_ok)) } }
         )
     }
 }

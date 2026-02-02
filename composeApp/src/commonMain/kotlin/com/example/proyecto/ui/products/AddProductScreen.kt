@@ -20,7 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight // IMPORT NECESARIO AÑADIDO
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -30,18 +30,19 @@ import com.example.proyecto.ui.HuertaInput
 import com.example.proyecto.ui.garden.GardenViewModel
 import com.example.proyecto.data.repository.PerenualSpecies
 import com.example.proyecto.ui.theme.GreenPrimary
+import org.jetbrains.compose.resources.stringResource
+import huertomanager.composeapp.generated.resources.*
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddProductScreen(
     navController: NavController,
-    productId: Long? = null, // ID opcional para activar modo edición
+    productId: Long? = null,
     viewModel: GardenViewModel = koinViewModel()
 ) {
     val isEditMode = productId != null
 
-    // Estados
     var name by remember { mutableStateOf("") }
     var stock by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
@@ -50,14 +51,16 @@ fun AddProductScreen(
     var scientificName by remember { mutableStateOf<String?>(null) }
     var selectedType by remember { mutableStateOf(ProductType.SEED) }
 
-    // Estados UI
     var expandedType by remember { mutableStateOf(false) }
     var showApiSearchDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+
+    // --- CORRECCIÓN: Pre-carga string ---
+    val msgSaved = stringResource(Res.string.dialog_success_product_saved)
 
     val apiResults: List<PerenualSpecies> by viewModel.apiSearchResults.collectAsState(emptyList())
 
-    // --- NUEVO BLOQUE: CARGA DE DATOS PARA EDICIÓN ---
     LaunchedEffect(productId) {
         if (isEditMode && productId != null) {
             val producto = viewModel.getProductoById(productId)
@@ -68,19 +71,18 @@ fun AddProductScreen(
                 perenualId = p.perenualId
                 selectedImageUrl = p.imagenUrl
                 scientificName = p.nombreCientifico
-                // Intentamos recuperar el tipo, si falla ponemos SEED
                 selectedType = try { ProductType.valueOf(p.categoria) } catch (e: Exception) { ProductType.SEED }
             }
         }
     }
 
     val isSeed = selectedType == ProductType.SEED
-    val unitLabel = if (selectedType == ProductType.FERTILIZER || selectedType == ProductType.CHEMICAL) " (kg/L)" else " (unds)"
+    val unitLabel = if (selectedType == ProductType.FERTILIZER || selectedType == ProductType.CHEMICAL) " (kg/L)" else stringResource(Res.string.product_units)
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditMode) "Editar Producto" else "Añadir Producto") },
+                title = { Text(if (isEditMode) stringResource(Res.string.product_edit_title) else stringResource(Res.string.product_add_title)) },
                 navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.Default.ArrowBack, null) } }
             )
         }
@@ -91,7 +93,7 @@ fun AddProductScreen(
         ) {
             ElevatedCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Ficha Técnica", style = MaterialTheme.typography.titleMedium, color = GreenPrimary)
+                    Text(stringResource(Res.string.product_tech_sheet), style = MaterialTheme.typography.titleMedium, color = GreenPrimary)
 
                     if (!selectedImageUrl.isNullOrBlank()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -103,7 +105,7 @@ fun AddProductScreen(
                             )
                             Spacer(Modifier.width(12.dp))
                             Column {
-                                Text("Vinculado con Catálogo", color = GreenPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                                Text(stringResource(Res.string.product_linked), color = GreenPrimary, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                                 if (perenualId != null) Text("ID: $perenualId", fontSize = 10.sp, color = Color.Gray)
                             }
                         }
@@ -114,7 +116,7 @@ fun AddProductScreen(
                             value = selectedType.name,
                             onValueChange = {},
                             readOnly = true,
-                            label = { Text("Categoría") },
+                            label = { Text(stringResource(Res.string.product_category)) },
                             trailingIcon = { IconButton(onClick = { expandedType = true }) { Icon(Icons.Default.ArrowDropDown, null) } },
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -137,60 +139,55 @@ fun AddProductScreen(
                         ) {
                             Icon(Icons.Default.Search, null, Modifier.size(18.dp))
                             Spacer(Modifier.width(8.dp))
-                            Text("Seleccionar de Base de Datos")
+                            Text(stringResource(Res.string.product_select_db))
                         }
                     }
 
-                    HuertaInput(value = name, onValueChange = { name = it }, label = "Nombre Común", icon = Icons.Default.Edit)
-                    HuertaInput(value = stock, onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) stock = it }, label = "Stock $unitLabel", icon = Icons.Default.Inventory)
+                    HuertaInput(value = name, onValueChange = { name = it }, label = stringResource(Res.string.product_name_label), icon = Icons.Default.Edit)
+                    HuertaInput(value = stock, onValueChange = { if (it.all { c -> c.isDigit() || c == '.' }) stock = it }, label = "${stringResource(Res.string.product_stock_label)} $unitLabel", icon = Icons.Default.Inventory)
 
                     OutlinedTextField(
                         value = notes,
                         onValueChange = { notes = it },
-                        label = { Text("Notas, Asociaciones, Fechas...") },
+                        label = { Text(stringResource(Res.string.product_notes_label)) },
                         modifier = Modifier.fillMaxWidth().height(100.dp),
                         maxLines = 4
                     )
                 }
             }
 
-            // BOTÓN GUARDAR (MODIFICADO PARA EDICIÓN)
             Button(
                 onClick = {
-                    // Si estamos editando, usamos el productId original. Si no, 0L (crear nuevo).
                     val idToSave = productId ?: 0L
-
-                    // FIX: Usamos argumentos posicionales o nombres completos para evitar errores
                     viewModel.guardarProducto(
                         id = idToSave,
                         n = name,
                         c = selectedType.name,
                         s = stock.toDoubleOrNull() ?: 0.0,
-                        perenualId = perenualId, // CORREGIDO: pId -> perenualId
-                        imagenUrl = selectedImageUrl, // CORREGIDO: img -> imagenUrl
-                        nombreCientifico = scientificName, // CORREGIDO: cientifico -> nombreCientifico
+                        perenualId = perenualId,
+                        imagenUrl = selectedImageUrl,
+                        nombreCientifico = scientificName,
                         notas = notes
                     )
-
-                    navController.popBackStack()
+                    showSuccessDialog = true
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 enabled = name.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
-            ) { Text(if (isEditMode) "Guardar Cambios" else "Guardar Ficha") }
+            ) { Text(if (isEditMode) stringResource(Res.string.product_save_changes) else stringResource(Res.string.product_save_sheet)) }
         }
     }
 
     if (showApiSearchDialog) {
         AlertDialog(
             onDismissRequest = { showApiSearchDialog = false },
-            title = { Text("Catálogo de Cultivos") },
+            title = { Text(stringResource(Res.string.product_catalog_title)) },
             text = {
                 Column(modifier = Modifier.fillMaxWidth()) {
                     OutlinedTextField(
                         value = searchQuery,
                         onValueChange = { searchQuery = it; viewModel.buscarCultivoApi(it) },
-                        label = { Text("Filtrar (ej: Tomate)") },
+                        label = { Text(stringResource(Res.string.product_filter_hint)) },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         leadingIcon = { Icon(Icons.Default.Search, null) }
@@ -225,7 +222,16 @@ fun AddProductScreen(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showApiSearchDialog = false }) { Text("Cancelar") } }
+            confirmButton = { TextButton(onClick = { showApiSearchDialog = false }) { Text(stringResource(Res.string.btn_cancel)) } }
+        )
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            title = { Text(stringResource(Res.string.dialog_success_title)) },
+            text = { Text(msgSaved) }, // VARIABLE
+            confirmButton = { Button(onClick = { showSuccessDialog = false; navController.popBackStack() }) { Text(stringResource(Res.string.dialog_btn_ok)) } }
         )
     }
 }

@@ -5,12 +5,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.items // IMPORTANTE
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -36,6 +36,8 @@ import com.example.proyecto.data.database.entity.EntradaDiarioEntity
 import com.example.proyecto.ui.HuertaCard
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
+import org.jetbrains.compose.resources.stringResource
+import huertomanager.composeapp.generated.resources.*
 import org.koin.compose.viewmodel.koinViewModel
 import kotlinx.datetime.*
 
@@ -49,19 +51,18 @@ fun GardenSlotDetailScreen(
     val id = bancalId.toLongOrNull() ?: 0L
     var activeActionType by remember { mutableStateOf<String?>(null) }
 
-    // ESTADOS PARA EL MENÚ Y DIÁLOGOS
     var showMenu by remember { mutableStateOf(false) }
     var showHarvestDialog by remember { mutableStateOf(false) }
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var successMessage by remember { mutableStateOf("") }
 
-    // ESTADO
     val bancalState = remember { mutableStateOf<BancalEntity?>(null) }
     val bancal = bancalState.value
 
     val historialState = viewModel.getHistorial(id).collectAsState(initial = emptyList<EntradaDiarioEntity>())
     val historial = historialState.value
 
-    // RECUPERAR DATOS EXTENDIDOS (FICHA)
     val fichaTecnica by remember(bancal) {
         derivedStateOf { viewModel.getInfoExtendida(bancal?.perenualId) }
     }
@@ -72,206 +73,98 @@ fun GardenSlotDetailScreen(
 
     val displayImageUrl = bancal?.imagenUrl
 
+    // --- CORRECCIÓN: Precargar strings ---
+    val msgTaskRegistered = stringResource(Res.string.dialog_success_task_registered)
+    val msgHarvest = stringResource(Res.string.dialog_success_harvest)
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { }, // Título vacío porque ahora está en la imagen
+                title = { },
                 navigationIcon = {
-                    // Fondo oscuro circular para que se vea el botón de atrás sobre la foto
-                    IconButton(
-                        onClick = { navController.popBackStack() },
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .background(Color.Black.copy(alpha = 0.3f), CircleShape)
-                    ) {
+                    IconButton(onClick = { navController.popBackStack() }, modifier = Modifier.padding(8.dp).background(Color.Black.copy(alpha = 0.3f), CircleShape)) {
                         Icon(Icons.Default.ArrowBack, null, tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
                 actions = {
-                    // --- MENÚ DE TRES PUNTOS ---
                     if (bancal?.nombreCultivo != null) {
                         Box(modifier = Modifier.padding(8.dp)) {
-                            IconButton(
-                                onClick = { showMenu = true },
-                                modifier = Modifier.background(Color.Black.copy(alpha = 0.3f), CircleShape)
-                            ) {
+                            IconButton(onClick = { showMenu = true }, modifier = Modifier.background(Color.Black.copy(alpha = 0.3f), CircleShape)) {
                                 Icon(Icons.Default.MoreVert, contentDescription = "Opciones", tint = Color.White)
                             }
-                            DropdownMenu(
-                                expanded = showMenu,
-                                onDismissRequest = { showMenu = false }
-                            ) {
-                                DropdownMenuItem(
-                                    text = { Text("Cosechar") },
-                                    leadingIcon = { Icon(Icons.Default.ShoppingBasket, null, tint = GreenPrimary) },
-                                    onClick = {
-                                        showMenu = false
-                                        showHarvestDialog = true
-                                    }
-                                )
+                            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                DropdownMenuItem(text = { Text(stringResource(Res.string.garden_harvest)) }, leadingIcon = { Icon(Icons.Default.ShoppingBasket, null, tint = GreenPrimary) }, onClick = { showMenu = false; showHarvestDialog = true })
                                 HorizontalDivider()
-                                DropdownMenuItem(
-                                    text = { Text("Eliminar", color = RedDanger) },
-                                    leadingIcon = { Icon(Icons.Default.Delete, null, tint = RedDanger) },
-                                    onClick = {
-                                        showMenu = false
-                                        showDeleteDialog = true
-                                    }
-                                )
+                                DropdownMenuItem(text = { Text(stringResource(Res.string.garden_delete_plant), color = RedDanger) }, leadingIcon = { Icon(Icons.Default.Delete, null, tint = RedDanger) }, onClick = { showMenu = false; showDeleteDialog = true })
                             }
                         }
                     }
                 }
             )
         },
-        // Hacemos que el contenido pase por debajo de la TopBar
         contentWindowInsets = WindowInsets(0,0,0,0)
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-        ) {
-            // --- FOTO DE CABECERA GRANDE ---
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(300.dp) // Hacemos la imagen más alta
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            ) {
+        Column(modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            Box(modifier = Modifier.fillMaxWidth().height(300.dp).background(MaterialTheme.colorScheme.surfaceVariant)) {
                 if (!displayImageUrl.isNullOrBlank()) {
-                    AsyncImage(
-                        model = displayImageUrl,
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop,
-                        placeholder = rememberVectorPainter(Icons.Default.Eco),
-                        error = rememberVectorPainter(Icons.Default.Eco)
-                    )
+                    AsyncImage(model = displayImageUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 } else {
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Default.Eco, null, modifier = Modifier.size(100.dp), tint = GreenPrimary.copy(alpha=0.3f))
-                    }
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Icon(Icons.Default.Eco, null, modifier = Modifier.size(100.dp), tint = GreenPrimary.copy(alpha=0.3f)) }
                 }
-
-                // DEGRADADO OSCURO EN LA PARTE INFERIOR (Para que se lea el texto)
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.verticalGradient(
-                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
-                                startY = 300f
-                            )
-                        )
-                )
-
-                // TEXTO DEL BANCAL (Abajo Centro)
-                Column(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = bancal?.nombreCultivo ?: "Bancal Vacío",
-                        style = MaterialTheme.typography.headlineMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-
-                    // Mostrar info extra (Sol/Riego) en blanco si existe
+                Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)), startY = 300f)))
+                Column(modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = bancal?.nombreCultivo ?: stringResource(Res.string.garden_slot_empty_title), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold, color = Color.White)
                     if (bancal?.nombreCultivo != null && (bancal.frecuenciaRiegoDias != null || bancal.necesidadSol != null)) {
                         Spacer(Modifier.height(8.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                            bancal.frecuenciaRiegoDias?.let {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.WaterDrop, null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                    Text(" $it d", color = Color.White, fontWeight = FontWeight.Bold)
-                                }
-                            }
-                            bancal.necesidadSol?.let {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(Icons.Default.WbSunny, null, tint = Color.White, modifier = Modifier.size(16.dp))
-                                    Text(" $it", color = Color.White, fontWeight = FontWeight.Bold)
-                                }
-                            }
+                            bancal.frecuenciaRiegoDias?.let { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.WaterDrop, null, tint = Color.White, modifier = Modifier.size(16.dp)); Text(" $it d", color = Color.White, fontWeight = FontWeight.Bold) } }
+                            bancal.necesidadSol?.let { Row(verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.WbSunny, null, tint = Color.White, modifier = Modifier.size(16.dp)); Text(" $it", color = Color.White, fontWeight = FontWeight.Bold) } }
                         }
                     }
                 }
             }
 
-            // --- CONTENIDO INFERIOR ---
             Column(modifier = Modifier.padding(20.dp)) {
-
-                // 2. GUÍA DE CULTIVO (Si hay datos)
                 if (fichaTecnica != null) {
-                    Text("Guía de Cultivo", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(stringResource(Res.string.garden_guide_title), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(Modifier.height(10.dp))
-
                     HuertaCard {
                         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                            Row(verticalAlignment = Alignment.Top) {
-                                Icon(Icons.Default.ThumbUp, null, tint = GreenPrimary, modifier = Modifier.size(20.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Column {
-                                    Text("Plantas Amigas:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text(fichaTecnica!!.amigos, fontSize = 13.sp, color = Color.Gray)
-                                }
-                            }
+                            Row(verticalAlignment = Alignment.Top) { Icon(Icons.Default.ThumbUp, null, tint = GreenPrimary, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Column { Text(stringResource(Res.string.garden_friends), fontWeight = FontWeight.Bold, fontSize = 14.sp); Text(fichaTecnica!!.amigos, fontSize = 13.sp, color = Color.Gray) } }
                             HorizontalDivider(color = Color.LightGray.copy(alpha=0.5f))
-
-                            Row(verticalAlignment = Alignment.Top) {
-                                Icon(Icons.Default.ThumbDown, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Column {
-                                    Text("Evitar plantar cerca:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text(fichaTecnica!!.enemigos, fontSize = 13.sp, color = Color.Gray)
-                                }
-                            }
+                            Row(verticalAlignment = Alignment.Top) { Icon(Icons.Default.ThumbDown, null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Column { Text(stringResource(Res.string.garden_enemies), fontWeight = FontWeight.Bold, fontSize = 14.sp); Text(fichaTecnica!!.enemigos, fontSize = 13.sp, color = Color.Gray) } }
                             HorizontalDivider(color = Color.LightGray.copy(alpha=0.5f))
-
-                            Row(verticalAlignment = Alignment.Top) {
-                                Icon(Icons.Default.Lightbulb, null, tint = Color(0xFFFBC02D), modifier = Modifier.size(20.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Column {
-                                    Text("Consejo Pro:", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                    Text(fichaTecnica!!.consejo, fontSize = 13.sp, fontStyle = FontStyle.Italic)
-                                }
-                            }
+                            Row(verticalAlignment = Alignment.Top) { Icon(Icons.Default.Lightbulb, null, tint = Color(0xFFFBC02D), modifier = Modifier.size(20.dp)); Spacer(Modifier.width(8.dp)); Column { Text(stringResource(Res.string.garden_pro_tip), fontWeight = FontWeight.Bold, fontSize = 14.sp); Text(fichaTecnica!!.consejo, fontSize = 13.sp, fontStyle = FontStyle.Italic) } }
                         }
                     }
                 } else if (bancal?.nombreCultivo == null) {
-                    // Mensaje si está vacío
-                    Box(modifier = Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) {
-                        Text("Este bancal está disponible para plantar.", color = Color.Gray, fontStyle = FontStyle.Italic)
-                    }
+                    Box(modifier = Modifier.fillMaxWidth().padding(20.dp), contentAlignment = Alignment.Center) { Text(stringResource(Res.string.garden_available_msg), color = Color.Gray, fontStyle = FontStyle.Italic) }
                 }
 
-                // 3. ACCIONES Y DIARIO
                 if (bancal?.nombreCultivo != null) {
                     Spacer(Modifier.height(24.dp))
-                    Text("Acciones Rápidas", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(stringResource(Res.string.garden_quick_actions), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                     Spacer(Modifier.height(12.dp))
                     Row(Modifier.fillMaxWidth(), Arrangement.spacedBy(10.dp)) {
-                        QuickActionItem("Regar", Icons.Default.WaterDrop, Modifier.weight(1f)) { activeActionType = "RIEGO" }
-
-                        QuickActionItem("Podar", Icons.Default.ContentCut, Modifier.weight(1f)) {
+                        QuickActionItem(stringResource(Res.string.action_water), Icons.Default.WaterDrop, Modifier.weight(1f)) { activeActionType = "RIEGO" }
+                        QuickActionItem(stringResource(Res.string.action_prune), Icons.Default.ContentCut, Modifier.weight(1f)) {
                             viewModel.guardarEntradaDiario(id, "PODA", "Poda realizada", System.currentTimeMillis())
+                            successMessage = msgTaskRegistered // VARIABLE
+                            showSuccessDialog = true
                         }
-
-                        QuickActionItem("Tratar", Icons.Default.BugReport, Modifier.weight(1f)) { activeActionType = "ANTIPLAGA" }
-                        QuickActionItem("Abonar", Icons.Default.Science, Modifier.weight(1f)) { activeActionType = "ABONADO" }
+                        // FIX: stringResource corregido
+                        QuickActionItem(stringResource(Res.string.action_treat), Icons.Default.BugReport, Modifier.weight(1f)) { activeActionType = "ANTIPLAGA" }
+                        QuickActionItem(stringResource(Res.string.action_fertilize), Icons.Default.Science, Modifier.weight(1f)) { activeActionType = "ABONADO" }
                     }
                 }
 
                 Spacer(Modifier.height(30.dp))
-                Text("Historial", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(stringResource(Res.string.garden_history), fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 Spacer(Modifier.height(16.dp))
 
                 if (historial.isEmpty()) {
-                    Text("No hay registros.", color = Color.Gray, fontStyle = FontStyle.Italic)
+                    Text(stringResource(Res.string.garden_no_history), color = Color.Gray, fontStyle = FontStyle.Italic)
                 } else {
                     historial.sortedByDescending { it.fecha }.forEachIndexed { index, entrada ->
                         val date = Instant.fromEpochMilliseconds(entrada.fecha).toLocalDateTime(TimeZone.currentSystemDefault())
@@ -279,92 +172,67 @@ fun GardenSlotDetailScreen(
                             t = entrada.tipoAccion,
                             d = entrada.descripcion,
                             tm = "${date.dayOfMonth}/${date.monthNumber}",
-                            i = when(entrada.tipoAccion) {
-                                "SIEMBRA" -> Icons.Default.Eco
-                                "RIEGO" -> Icons.Default.WaterDrop
-                                "PODA" -> Icons.Default.ContentCut
-                                "COSECHA" -> Icons.Default.ShoppingBasket
-                                else -> Icons.Default.History
-                            },
+                            i = when(entrada.tipoAccion) { "SIEMBRA" -> Icons.Default.Eco; "RIEGO" -> Icons.Default.WaterDrop; "PODA" -> Icons.Default.ContentCut; "COSECHA" -> Icons.Default.ShoppingBasket; else -> Icons.Default.History },
                             c = GreenPrimary,
                             s = index != historial.size - 1
                         )
                     }
                 }
-
-                // Espacio extra al final
                 Spacer(Modifier.height(80.dp))
             }
         }
     }
 
-    if (activeActionType != null) ActionDialog(activeActionType!!, viewModel, id) { activeActionType = null }
+    if (activeActionType != null) ActionDialog(activeActionType!!, viewModel, id) {
+        activeActionType = null
+        successMessage = msgTaskRegistered // VARIABLE
+        showSuccessDialog = true
+    }
 
-    // --- DIÁLOGO DE COSECHA ---
     if (showHarvestDialog && bancal != null) {
         var cantidadCosecha by remember { mutableStateOf("") }
-
         AlertDialog(
             onDismissRequest = { showHarvestDialog = false },
             icon = { Icon(Icons.Default.ShoppingBasket, null, tint = GreenPrimary) },
-            title = { Text("Registrar Cosecha") },
-            text = {
-                Column {
-                    Text("¡Enhorabuena! ¿Cuánto has cosechado?")
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = cantidadCosecha,
-                        onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) cantidadCosecha = it },
-                        label = { Text("Cantidad (unidades o kg)") },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        "Se añadirá a tu inventario de productos.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val cantidad = cantidadCosecha.toDoubleOrNull() ?: 0.0
-                        viewModel.cosecharConCantidad(bancal, cantidad)
-                        showHarvestDialog = false
-                        navController.popBackStack()
-                    },
-                    enabled = cantidadCosecha.isNotEmpty(),
-                    colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
-                ) { Text("Guardar") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showHarvestDialog = false }) { Text("Cancelar") }
-            }
+            title = { Text(stringResource(Res.string.garden_harvest_dialog_title)) },
+            text = { Column { Text(stringResource(Res.string.garden_harvest_dialog_msg)); Spacer(Modifier.height(8.dp)); OutlinedTextField(value = cantidadCosecha, onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) cantidadCosecha = it }, label = { Text(stringResource(Res.string.garden_harvest_amount_hint)) }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth()); Spacer(Modifier.height(4.dp)); Text(stringResource(Res.string.garden_harvest_note), style = MaterialTheme.typography.bodySmall, color = Color.Gray) } },
+            confirmButton = { Button(onClick = {
+                viewModel.cosecharConCantidad(bancal, cantidadCosecha.toDoubleOrNull() ?: 0.0)
+                showHarvestDialog = false
+                successMessage = msgHarvest // VARIABLE
+                showSuccessDialog = true
+            }, enabled = cantidadCosecha.isNotEmpty(), colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)) { Text(stringResource(Res.string.btn_save)) } },
+            dismissButton = { TextButton(onClick = { showHarvestDialog = false }) { Text(stringResource(Res.string.btn_cancel)) } }
         )
     }
 
-    // --- DIÁLOGO DE ELIMINAR ---
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             icon = { Icon(Icons.Default.Warning, null, tint = RedDanger) },
-            title = { Text("¿Eliminar planta?") },
-            text = { Text("Se perderán los datos del cultivo actual y no se registrará producción. ¿Estás seguro?") },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        viewModel.eliminarPlanta(id)
-                        showDeleteDialog = false
-                        navController.popBackStack()
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = RedDanger)
-                ) { Text("Eliminar") }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
-            }
+            title = { Text(stringResource(Res.string.garden_delete_dialog_title)) },
+            text = { Text(stringResource(Res.string.garden_delete_dialog_msg)) },
+            confirmButton = { Button(onClick = {
+                viewModel.eliminarPlanta(id)
+                showDeleteDialog = false
+                // No mostrar diálogo de éxito porque volvemos atrás
+                navController.popBackStack()
+            }, colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) { Text(stringResource(Res.string.btn_delete)) } },
+            dismissButton = { TextButton(onClick = { showDeleteDialog = false }) { Text(stringResource(Res.string.btn_cancel)) } }
+        )
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            title = { Text(stringResource(Res.string.dialog_success_title)) },
+            text = { Text(successMessage) },
+            confirmButton = { Button(onClick = {
+                showSuccessDialog = false
+                if(successMessage == msgHarvest) { // VARIABLE
+                    navController.popBackStack()
+                }
+            }) { Text(stringResource(Res.string.dialog_btn_ok)) } }
         )
     }
 }
@@ -384,50 +252,46 @@ fun BadgeInfo(icon: ImageVector, text: String) {
 fun ActionDialog(type: String, viewModel: GardenViewModel, bancalId: Long, onDismiss: () -> Unit) {
     var amount by remember { mutableStateOf("") }
     var selectedProduct by remember { mutableStateOf<ProductoEntity?>(null) }
-    val productosState = if(type == "ABONADO") {
-        viewModel.productosFertilizante.collectAsState(initial = emptyList())
-    } else {
-        viewModel.productosQuimicos.collectAsState(initial = emptyList())
-    }
+
+    // Obtener la lista de productos correctamente
+    val productosState = if(type == "ABONADO") viewModel.productosFertilizante.collectAsState(initial = emptyList()) else viewModel.productosQuimicos.collectAsState(initial = emptyList())
     val productos = productosState.value
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if(type == "RIEGO") "Registrar Riego" else "Aplicar Tratamiento") },
+        title = { Text(if(type == "RIEGO") stringResource(Res.string.garden_water_dialog_title) else stringResource(Res.string.garden_treat_dialog_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (type != "RIEGO") {
-                    Text("Producto:", style = MaterialTheme.typography.bodySmall)
-                    LazyColumn(Modifier.heightIn(max = 120.dp).fillMaxWidth()) {
-                        items(productos) { p ->
-                            Row(Modifier.fillMaxWidth().clickable { selectedProduct = p }.padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                                RadioButton(selectedProduct == p, { selectedProduct = p })
-                                Text(p.nombre, modifier = Modifier.padding(start = 8.dp))
+                    Text(stringResource(Res.string.garden_product_label), style = MaterialTheme.typography.bodySmall)
+                    if (productos.isEmpty()) {
+                        Text(stringResource(Res.string.garden_no_products), fontStyle = FontStyle.Italic, color = Color.Gray)
+                    } else {
+                        // FIX: Correcta implementación de LazyColumn
+                        LazyColumn(modifier = Modifier.heightIn(max = 120.dp).fillMaxWidth()) {
+                            items(productos) { p -> // Aquí usamos 'items' correctamente con la lista
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { selectedProduct = p }
+                                        .padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = (selectedProduct == p),
+                                        onClick = { selectedProduct = p }
+                                    )
+                                    Text(p.nombre, modifier = Modifier.padding(start = 8.dp))
+                                }
                             }
                         }
                     }
                 }
-                OutlinedTextField(
-                    value = amount,
-                    onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) amount = it },
-                    label = { Text(if(type == "RIEGO") "Litros (L)" else "Cantidad") },
-                    modifier = Modifier.fillMaxWidth(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
+                OutlinedTextField(value = amount, onValueChange = { if(it.all { c -> c.isDigit() || c == '.' }) amount = it }, label = { Text(if(type == "RIEGO") stringResource(Res.string.garden_liters_label) else stringResource(Res.string.garden_amount_label)) }, modifier = Modifier.fillMaxWidth(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
             }
         },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val value = amount.toDoubleOrNull() ?: 0.0
-                    if (type == "RIEGO") viewModel.registrarRiego(bancalId, value)
-                    else selectedProduct?.let { viewModel.aplicarTratamiento(bancalId, it, value, type) }
-                    onDismiss()
-                },
-                enabled = amount.isNotEmpty() && (type == "RIEGO" || selectedProduct != null)
-            ) { Text("Confirmar") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } }
+        confirmButton = { Button(onClick = { val value = amount.toDoubleOrNull() ?: 0.0; if (type == "RIEGO") viewModel.registrarRiego(bancalId, value) else selectedProduct?.let { viewModel.aplicarTratamiento(bancalId, it, value, type) }; onDismiss() }, enabled = amount.isNotEmpty() && (type == "RIEGO" || selectedProduct != null)) { Text(stringResource(Res.string.btn_confirm)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(Res.string.btn_cancel)) } }
     )
 }
 
@@ -445,16 +309,11 @@ fun QuickActionItem(l: String, i: ImageVector, m: Modifier, c: () -> Unit) {
 fun TimelineItem(t: String, d: String, tm: String, i: ImageVector, c: Color, s: Boolean) {
     Row(Modifier.height(IntrinsicSize.Min)) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.width(42.dp)) {
-            Box(Modifier.size(32.dp).border(2.dp, c, CircleShape), Alignment.Center) {
-                Icon(i, null, tint = c, modifier = Modifier.size(16.dp))
-            }
+            Box(Modifier.size(32.dp).border(2.dp, c, CircleShape), Alignment.Center) { Icon(i, null, tint = c, modifier = Modifier.size(16.dp)) }
             if (s) Box(Modifier.width(2.dp).fillMaxHeight().background(Color.LightGray))
         }
         HuertaCard(Modifier.padding(bottom = 16.dp)) {
-            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) {
-                Text(t, fontWeight = FontWeight.Bold)
-                Text(tm, fontSize = 12.sp, color = Color.Gray)
-            }
+            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) { Text(t, fontWeight = FontWeight.Bold); Text(tm, fontSize = 12.sp, color = Color.Gray) }
             Text(d, fontSize = 13.sp, modifier = Modifier.padding(top = 4.dp))
         }
     }

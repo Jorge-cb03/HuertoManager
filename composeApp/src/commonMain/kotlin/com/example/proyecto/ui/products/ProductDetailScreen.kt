@@ -8,30 +8,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
-import coil3.compose.AsyncImage
 import com.example.proyecto.data.database.entity.ProductoEntity
 import com.example.proyecto.domain.model.ProductType
 import com.example.proyecto.ui.garden.GardenViewModel
-import com.example.proyecto.ui.navigation.AppScreens
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
+import org.jetbrains.compose.resources.stringResource
+import huertomanager.composeapp.generated.resources.*
 import org.koin.compose.viewmodel.koinViewModel
+import kotlin.random.Random
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,242 +35,95 @@ fun ProductDetailScreen(
     productId: String,
     viewModel: GardenViewModel = koinViewModel()
 ) {
-    val idLong = productId.toLongOrNull() ?: 0L
     var producto by remember { mutableStateOf<ProductoEntity?>(null) }
-    var showDeleteConfirm by remember { mutableStateOf(false) }
-    var showMenu by remember { mutableStateOf(false) }
-    val scrollState = rememberScrollState()
+    LaunchedEffect(productId) {
+        producto = viewModel.getProductoById(productId.toLong())
+    }
 
-    LaunchedEffect(idLong) {
-        producto = viewModel.getProductoById(idLong)
+    val randomTip = remember {
+        val tipResources = listOf(Res.string.tip_1, Res.string.tip_2, Res.string.tip_3)
+        tipResources[Random.nextInt(tipResources.size)]
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(
-                        onClick = { navController.popBackStack() },
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .background(Color.Black.copy(alpha = 0.3f), CircleShape)
-                    ) { Icon(Icons.Rounded.ArrowBack, null, tint = Color.White) }
-                },
-                actions = {
-                    // --- MENÚ DE TRES PUNTOS ---
-                    Box(modifier = Modifier.padding(8.dp)) {
-                        IconButton(
-                            onClick = { showMenu = true },
-                            modifier = Modifier.background(Color.Black.copy(alpha = 0.3f), CircleShape)
-                        ) { Icon(Icons.Default.MoreVert, null, tint = Color.White) }
-
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false },
-                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Editar Producto") },
-                                leadingIcon = { Icon(Icons.Default.Edit, null) },
-                                onClick = {
-                                    showMenu = false
-                                    navController.navigate(AppScreens.createEditProductRoute(idLong))
-                                }
-                            )
-                            HorizontalDivider()
-                            DropdownMenuItem(
-                                text = { Text("Eliminar", color = RedDanger) },
-                                leadingIcon = { Icon(Icons.Default.Delete, null, tint = RedDanger) },
-                                onClick = {
-                                    showMenu = false
-                                    showDeleteConfirm = true
-                                }
-                            )
-                        }
-                    }
-                },
+                title = { Text(stringResource(Res.string.menu_products)) },
+                navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.Filled.ArrowBack, null) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
-        },
-        contentWindowInsets = WindowInsets(0, 0, 0, 0)
+        }
     ) { padding ->
-        if (producto == null) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
-        } else {
-            val item = producto!!
+        producto?.let { p ->
+            val isLowStock = p.stock <= 2
+            val pType = try { ProductType.valueOf(p.categoria) } catch(e: Exception) { ProductType.OTHER }
 
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState)
-            ) {
-                // --- CABECERA VISUAL ---
+            Column(modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
                 Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(300.dp)
+                    modifier = Modifier.fillMaxWidth().height(200.dp).background(
+                        Brush.verticalGradient(colors = listOf(GreenPrimary.copy(alpha = 0.2f), Color.Transparent))
+                    ),
+                    contentAlignment = Alignment.Center
                 ) {
-                    if (!item.imagenUrl.isNullOrBlank()) {
-                        AsyncImage(
-                            model = item.imagenUrl,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                        // Degradado oscuro para que se vean los iconos
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Brush.verticalGradient(colors = listOf(Color.Black.copy(0.4f), Color.Transparent, Color.Black.copy(0.6f))))
-                        )
-                    } else {
-                        // Fondo por defecto si no hay imagen
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Brush.verticalGradient(colors = listOf(GreenPrimary, GreenPrimary.copy(alpha = 0.6f))))
-                        )
-                    }
-
-                    // Título e icono central
-                    Column(
-                        modifier = Modifier
-                            .align(Alignment.BottomStart)
-                            .padding(24.dp)
-                            .padding(bottom = 40.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = GreenPrimary,
-                            modifier = Modifier.size(50.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(getIconForProductType(item.categoria), null, tint = Color.White)
-                            }
-                        }
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            text = item.nombre,
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                        if (!item.nombreCientifico.isNullOrBlank()) {
-                            Text(
-                                text = item.nombreCientifico,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic,
-                                color = Color.White.copy(alpha = 0.9f)
+                    Surface(modifier = Modifier.size(140.dp), shape = CircleShape, color = MaterialTheme.colorScheme.surface, shadowElevation = 8.dp) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                imageVector = when(pType) {
+                                    ProductType.TOOL -> Icons.Filled.Build
+                                    ProductType.SEED -> Icons.Filled.Spa
+                                    else -> Icons.Filled.Inventory2
+                                },
+                                contentDescription = null,
+                                tint = GreenPrimary,
+                                modifier = Modifier.size(70.dp)
                             )
                         }
                     }
                 }
 
-                // --- TARJETA DE CONTENIDO ---
-                Column(
-                    modifier = Modifier
-                        .offset(y = (-30).dp)
-                        .padding(horizontal = 16.dp)
-                ) {
-                    ElevatedCard(
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.elevatedCardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(Modifier.padding(24.dp)) {
-                            // GRID DE DATOS TÉCNICOS
-                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                                DetailInfoItem(Icons.Default.Category, "Categoría", item.categoria)
-                                DetailInfoItem(Icons.Default.Inventory, "Stock", "${item.stock}")
-                            }
+                Column(modifier = Modifier.padding(horizontal = 24.dp)) {
+                    Text(text = p.nombre, style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.ExtraBold)
 
-                            Spacer(Modifier.height(20.dp))
-
-                            if (item.perenualId != null) {
-                                DetailInfoItem(Icons.Default.Link, "ID Catálogo", "#${item.perenualId}")
-                            }
-                        }
+                    Surface(color = GreenPrimary.copy(alpha = 0.1f), shape = RoundedCornerShape(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+                        Text(text = p.categoria, modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp), color = GreenPrimary, fontWeight = FontWeight.Bold)
                     }
 
                     Spacer(Modifier.height(24.dp))
 
-                    Text(
-                        text = "Notas y Cuidados",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+                    DetailInfoCard(
+                        title = stringResource(Res.string.product_stock_label),
+                        value = "${p.stock} ${stringResource(Res.string.product_units)}",
+                        icon = Icons.Filled.Inventory,
+                        statusColor = if (isLowStock) RedDanger else GreenPrimary,
+                        statusText = if (isLowStock) stringResource(Res.string.product_stock_low) else stringResource(Res.string.product_available)
                     )
-                    Spacer(Modifier.height(12.dp))
 
-                    Surface(
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = item.notasCultivo?.ifBlank { "Sin notas registradas." } ?: "Sin notas registradas.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            lineHeight = 28.sp,
-                            modifier = Modifier.padding(20.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    Spacer(Modifier.height(24.dp))
+
+                    Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.4f), shape = RoundedCornerShape(16.dp)) {
+                        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Filled.TipsAndUpdates, null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(Modifier.width(12.dp))
+                            Column {
+                                Text(text = stringResource(Res.string.tip_title), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+                                Text(text = stringResource(randomTip), style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
                     }
-
-                    Spacer(Modifier.height(100.dp))
                 }
             }
         }
     }
-
-    if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { showDeleteConfirm = false },
-            icon = { Icon(Icons.Rounded.DeleteForever, null, tint = RedDanger) },
-            title = { Text("¿Eliminar producto?") },
-            text = { Text("Se perderá el registro de inventario permanentemente.") },
-            confirmButton = {
-                Button(
-                    onClick = { viewModel.eliminarProducto(idLong); navController.popBackStack() },
-                    colors = ButtonDefaults.buttonColors(containerColor = RedDanger)
-                ) { Text("Eliminar") }
-            },
-            dismissButton = { TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancelar") } }
-        )
-    }
 }
 
 @Composable
-fun DetailInfoItem(icon: ImageVector, label: String, value: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .background(GreenPrimary.copy(alpha = 0.1f), CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(icon, null, tint = GreenPrimary, modifier = Modifier.size(20.dp))
+fun DetailInfoCard(title: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector, statusColor: Color, statusText: String) {
+    ElevatedCard(modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(16.dp), elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)) {
+        Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Surface(shape = CircleShape, color = GreenPrimary.copy(alpha = 0.1f), modifier = Modifier.size(48.dp)) { Box(contentAlignment = androidx.compose.ui.Alignment.Center) { Icon(icon, null, tint = GreenPrimary) } }
+            Spacer(Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) { Text(text = title, style = MaterialTheme.typography.labelMedium, color = Color.Gray); Text(text = value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) }
+            Surface(color = statusColor.copy(alpha = 0.1f), shape = RoundedCornerShape(12.dp)) { Text(text = statusText, modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp), color = statusColor, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
         }
-        Spacer(Modifier.width(12.dp))
-        Column {
-            Text(label, style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-            Text(value, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-
-@Composable
-fun getIconForProductType(category: String): ImageVector {
-    return try {
-        when (ProductType.valueOf(category)) {
-            ProductType.SEED -> Icons.Default.Grass
-            ProductType.FERTILIZER -> Icons.Default.Science
-            ProductType.CHEMICAL -> Icons.Default.BugReport
-            ProductType.TOOL -> Icons.Default.Build
-            else -> Icons.Default.Inventory
-        }
-    } catch (e: Exception) {
-        Icons.Default.Inventory
     }
 }

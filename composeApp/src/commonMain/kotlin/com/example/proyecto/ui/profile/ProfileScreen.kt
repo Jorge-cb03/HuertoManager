@@ -1,7 +1,5 @@
 package com.example.proyecto.ui.profile
 
-import android.graphics.BitmapFactory
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,7 +24,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -40,6 +37,8 @@ import com.example.proyecto.util.MediaManager
 import org.jetbrains.compose.resources.stringResource
 import huertomanager.composeapp.generated.resources.*
 import org.koin.compose.viewmodel.koinViewModel
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.BorderStroke
 
 @Composable
 fun ProfileScreen(
@@ -55,22 +54,25 @@ fun ProfileScreen(
     var profilePhotoBytes by remember(usuario) { mutableStateOf(usuario?.fotoPerfil) }
 
     var showEditNameDialog by remember { mutableStateOf(false) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
     var tempName by remember { mutableStateOf("") }
     var showPhotoOptions by remember { mutableStateOf(false) }
     var showLogoutDialog by remember { mutableStateOf(false) }
+
+    // --- CORRECCIÓN: Pre-carga de string ---
+    val msgUpdated = stringResource(Res.string.dialog_success_profile_updated)
 
     val launcher = MediaManager.rememberLauncher { bytes ->
         if (bytes != null) {
             profilePhotoBytes = bytes
             showPhotoOptions = false
             viewModel.guardarPerfil(userName, userEmail, bytes)
+            showSuccessDialog = true
         }
     }
 
-    // --- DISEÑO PRINCIPAL ---
     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
 
-        // Fondo Decorativo Superior (Degradado sutil)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -89,9 +91,8 @@ fun ProfileScreen(
                 .padding(horizontal = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(Modifier.height(60.dp)) // Espacio para la barra de estado
+            Spacer(Modifier.height(60.dp))
 
-            // --- FOTO DE PERFIL PRO ---
             Box(contentAlignment = Alignment.BottomEnd) {
                 Surface(
                     modifier = Modifier
@@ -120,7 +121,6 @@ fun ProfileScreen(
                     }
                 }
 
-                // Botón de cámara flotante
                 Surface(
                     shape = CircleShape,
                     color = GreenPrimary,
@@ -139,10 +139,9 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(24.dp))
 
-            // --- INFORMACIÓN DEL USUARIO ---
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = userName,
+                    text = if(userName == "Usuario") stringResource(Res.string.profile_user_default) else userName,
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onBackground
@@ -163,30 +162,27 @@ fun ProfileScreen(
 
             Spacer(Modifier.height(40.dp))
 
-            // --- SECCIÓN DE AJUSTES ---
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = "CONFIGURACIÓN",
+                    text = stringResource(Res.string.profile_settings),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold,
                     color = GreenPrimary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
 
-                // Tarjeta de Ajustes
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                 ) {
                     Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                        // Modo Oscuro
                         SettingItem(
                             icon = if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode,
-                            title = stringResource(if (isDarkTheme) Res.string.pref_color_D else Res.string.pref_color_C),
+                            title = stringResource(if (isDarkTheme) Res.string.pref_dark_mode else Res.string.pref_light_mode),
                             iconColor = if (isDarkTheme) Color(0xFF9FA8DA) else Color(0xFFFFB74D),
                             trailingContent = {
                                 Switch(
@@ -199,7 +195,6 @@ fun ProfileScreen(
 
                         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.2f))
 
-                        // Acerca de
                         SettingItem(
                             icon = Icons.Default.Info,
                             title = stringResource(Res.string.about_title),
@@ -211,7 +206,6 @@ fun ProfileScreen(
 
                 Spacer(Modifier.height(8.dp))
 
-                // Botón Cerrar Sesión (Estilo Diferente)
                 OutlinedButton(
                     onClick = { showLogoutDialog = true },
                     modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -229,12 +223,11 @@ fun ProfileScreen(
         }
     }
 
-    // --- DIÁLOGO DE EDICIÓN DE NOMBRE ---
     if (showEditNameDialog) {
         AlertDialog(
             onDismissRequest = { showEditNameDialog = false },
-            title = { Text(stringResource(Res.string.profile_edit_title)) },
-            text = { HuertaInput(tempName, { tempName = it }, "Nuevo nombre", Icons.Default.Person) },
+            title = { Text(stringResource(Res.string.profile_edit_dialog_title)) },
+            text = { HuertaInput(tempName, { tempName = it }, stringResource(Res.string.profile_new_name_hint), Icons.Default.Person) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -242,18 +235,27 @@ fun ProfileScreen(
                             userName = tempName
                             viewModel.guardarPerfil(userName, userEmail, profilePhotoBytes)
                             showEditNameDialog = false
+                            showSuccessDialog = true
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
-                ) { Text("Guardar") }
+                ) { Text(stringResource(Res.string.btn_save)) }
             },
-            dismissButton = { TextButton(onClick = { showEditNameDialog = false }) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = { showEditNameDialog = false }) { Text(stringResource(Res.string.btn_cancel)) } },
             containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(24.dp)
         )
     }
 
-    // --- MENÚ DE FOTO PRO (ESTILO DIARIO) ---
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            title = { Text(stringResource(Res.string.dialog_success_title)) },
+            text = { Text(msgUpdated) }, // VARIABLE
+            confirmButton = { Button(onClick = { showSuccessDialog = false }) { Text(stringResource(Res.string.dialog_btn_ok)) } }
+        )
+    }
+
     if (showPhotoOptions) {
         Dialog(onDismissRequest = { showPhotoOptions = false }) {
             Surface(
@@ -269,14 +271,13 @@ fun ProfileScreen(
                     Icon(Icons.Default.PhotoCamera, null, tint = GreenPrimary, modifier = Modifier.size(40.dp))
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        text = stringResource(Res.string.profile_change_photo),
+                        text = stringResource(Res.string.profile_change_photo_title),
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(Modifier.height(24.dp))
 
-                    // Botón Cámara (Estilo Primario)
                     Button(
                         onClick = { launcher.launchCamera(); showPhotoOptions = false },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -285,12 +286,11 @@ fun ProfileScreen(
                     ) {
                         Icon(Icons.Outlined.CameraAlt, null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Hacer Foto", fontWeight = FontWeight.Bold)
+                        Text(stringResource(Res.string.diary_btn_take_photo), fontWeight = FontWeight.Bold)
                     }
 
                     Spacer(Modifier.height(12.dp))
 
-                    // Botón Galería (Estilo Outlined)
                     OutlinedButton(
                         onClick = { launcher.launchGallery(); showPhotoOptions = false },
                         modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -299,26 +299,25 @@ fun ProfileScreen(
                     ) {
                         Icon(Icons.Outlined.Image, null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Abrir Galería")
+                        Text(stringResource(Res.string.diary_btn_gallery))
                     }
 
                     Spacer(Modifier.height(20.dp))
 
                     TextButton(onClick = { showPhotoOptions = false }) {
-                        Text("Cancelar", color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
+                        Text(stringResource(Res.string.btn_cancel), color = MaterialTheme.colorScheme.secondary, fontWeight = FontWeight.Bold)
                     }
                 }
             }
         }
     }
 
-    // --- DIÁLOGO DE CIERRE DE SESIÓN ---
     if (showLogoutDialog) {
         AlertDialog(
             onDismissRequest = { showLogoutDialog = false },
             icon = { Icon(Icons.Default.Warning, null, tint = RedDanger) },
-            title = { Text(stringResource(Res.string.dialog_logout_title)) },
-            text = { Text(stringResource(Res.string.dialog_logout_msg), textAlign = TextAlign.Center) },
+            title = { Text(stringResource(Res.string.profile_logout)) },
+            text = { Text(stringResource(Res.string.profile_logout_msg), textAlign = androidx.compose.ui.text.style.TextAlign.Center) },
             confirmButton = {
                 Button(
                     onClick = {
@@ -327,10 +326,10 @@ fun ProfileScreen(
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = RedDanger),
                     shape = RoundedCornerShape(12.dp)
-                ) { Text(stringResource(Res.string.dialog_confirm)) }
+                ) { Text(stringResource(Res.string.btn_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { showLogoutDialog = false }) { Text(stringResource(Res.string.dialog_cancel)) }
+                TextButton(onClick = { showLogoutDialog = false }) { Text(stringResource(Res.string.btn_cancel)) }
             },
             containerColor = MaterialTheme.colorScheme.surface,
             shape = RoundedCornerShape(24.dp)
@@ -338,7 +337,6 @@ fun ProfileScreen(
     }
 }
 
-// Componente auxiliar para filas de ajustes
 @Composable
 fun SettingItem(
     icon: ImageVector,

@@ -9,8 +9,8 @@ data class ProductoEntity(
     val nombre: String,
     val categoria: String,
     val stock: Double,
-    val perenualId: Int? = null, // VUELVE A SER INT
-    val imagenUrl: String? = null,
+    val perenualId: Int? = null,
+    val imagenUrl: String? = null, // It is 'imagenUrl'
     val nombreCientifico: String? = null,
     val notasCultivo: String? = null
 )

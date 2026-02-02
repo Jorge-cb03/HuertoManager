@@ -54,7 +54,7 @@ fun AddDiaryEntryScreen(
     val scrollState = rememberScrollState()
 
     // --- RECURSOS ---
-    val irrigationTypeStr = stringResource(Res.string.diary_chip_irrigation)
+    val irrigationTypeStr = stringResource(Res.string.chip_irrigation)
     val successMsg = stringResource(Res.string.dialog_success_diary_saved)
 
     // --- ESTADOS ---
@@ -82,10 +82,10 @@ fun AddDiaryEntryScreen(
 
     val taskTypes = listOf(
         irrigationTypeStr,
-        stringResource(Res.string.diary_chip_pruning),
-        stringResource(Res.string.diary_chip_harvest),
-        stringResource(Res.string.diary_chip_fertilizer),
-        stringResource(Res.string.diary_chip_other)
+        stringResource(Res.string.chip_pruning),
+        stringResource(Res.string.chip_harvest),
+        stringResource(Res.string.chip_fertilizer),
+        stringResource(Res.string.chip_other)
     )
     var selectedType by remember { mutableStateOf(initialType ?: taskTypes[0]) }
     var waterAmount by remember { mutableStateOf(initialWater) }
@@ -113,9 +113,7 @@ fun AddDiaryEntryScreen(
                 title = ent.tipoAccion
                 description = ent.descripcion
                 selectedType = if(taskTypes.contains(ent.tipoAccion)) ent.tipoAccion else taskTypes.last()
-
-                // Cargar foto si existe
-                diaryPhotoBytes = ent.foto
+                diaryPhotoBytes = ent.foto // Cargar foto si existe
 
                 val bancal = viewModel.getBancalById(ent.bancalId)
                 bancal?.let { b ->
@@ -130,7 +128,7 @@ fun AddDiaryEntryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(if (isEditMode) Res.string.menu_edit else Res.string.add_diary_title)) },
+                title = { Text(stringResource(if (isEditMode) Res.string.diary_edit_entry_title else Res.string.diary_new_entry_title)) },
                 navigationIcon = { IconButton(onClick = { navController.popBackStack() }) { Icon(Icons.Filled.ArrowBack, null) } }
             )
         }
@@ -146,11 +144,11 @@ fun AddDiaryEntryScreen(
             // SECCIÓN 1: UBICACIÓN Y FECHA
             OutlinedCard(border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Ubicación y Fecha", color = GreenPrimary, fontWeight = FontWeight.Bold)
+                    Text(stringResource(Res.string.diary_section_location), color = GreenPrimary, fontWeight = FontWeight.Bold)
                     Box {
                         SelectorRow(
-                            label = "Seleccionar Jardinera",
-                            value = selectedJardinera?.nombre ?: "Toca para elegir",
+                            label = stringResource(Res.string.diary_select_garden),
+                            value = selectedJardinera?.nombre ?: stringResource(Res.string.diary_tap_select),
                             icon = Icons.Filled.Grass
                         ) { expandedGarden = true }
 
@@ -165,7 +163,7 @@ fun AddDiaryEntryScreen(
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                     SelectorRow(
-                        label = "Fecha de actividad",
+                        label = stringResource(Res.string.diary_date_activity),
                         value = "${selectedDate.dayOfMonth}/${selectedDate.monthNumber}/${selectedDate.year}",
                         icon = Icons.Filled.CalendarToday
                     ) { showDatePicker = true }
@@ -177,11 +175,11 @@ fun AddDiaryEntryScreen(
                 OutlinedCard(border = BorderStroke(1.dp, GreenPrimary.copy(alpha = 0.3f))) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween, Alignment.CenterVertically) {
-                            Text("Selecciona los bancales", fontWeight = FontWeight.Bold)
+                            Text(stringResource(Res.string.diary_select_slots), fontWeight = FontWeight.Bold)
                             TextButton(onClick = {
                                 if (selectedBancalIds.size == bancalesDisponibles.size) selectedBancalIds.clear()
                                 else { selectedBancalIds.clear(); selectedBancalIds.addAll(bancalesDisponibles.map { it.id }) }
-                            }) { Text(if (selectedBancalIds.size == bancalesDisponibles.size) "Deseleccionar" else "Todos") }
+                            }) { Text(if (selectedBancalIds.size == bancalesDisponibles.size) stringResource(Res.string.diary_deselect) else stringResource(Res.string.diary_all)) }
                         }
                         LazyVerticalGrid(columns = GridCells.Fixed(selectedJardinera!!.columnas), modifier = Modifier.heightIn(max = 250.dp).padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             items(bancalesDisponibles) { bancal ->
@@ -198,12 +196,12 @@ fun AddDiaryEntryScreen(
             // SECCIÓN 3: DETALLES
             OutlinedCard(border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
                 Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                    Text("Detalles", color = GreenPrimary, fontWeight = FontWeight.Bold)
-                    HuertaInput(title, { title = it }, "Título de la actividad", Icons.Filled.Title)
-                    HuertaInput(description, { description = it }, "Notas adicionales", Icons.Filled.Description)
+                    Text(stringResource(Res.string.diary_section_details), color = GreenPrimary, fontWeight = FontWeight.Bold)
+                    HuertaInput(title, { title = it }, stringResource(Res.string.diary_task_title_hint), Icons.Filled.Title)
+                    HuertaInput(description, { description = it }, stringResource(Res.string.diary_notes_hint), Icons.Filled.Description)
 
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Tipo", style = MaterialTheme.typography.labelLarge)
+                        Text(stringResource(Res.string.diary_type_label), style = MaterialTheme.typography.labelLarge)
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             taskTypes.forEach { type -> FilterChip(selected = (type == selectedType), onClick = { selectedType = type }, label = { Text(type) }) }
                         }
@@ -211,7 +209,7 @@ fun AddDiaryEntryScreen(
 
                     if (selectedType == irrigationTypeStr) {
                         Column(modifier = Modifier.background(GreenPrimary.copy(alpha = 0.05f), RoundedCornerShape(12.dp)).padding(12.dp)) {
-                            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) { Text("Cantidad"); Text("${waterAmount.toInt()} L", fontWeight = FontWeight.Bold, color = GreenPrimary) }
+                            Row(Modifier.fillMaxWidth(), Arrangement.SpaceBetween) { Text(stringResource(Res.string.diary_water_amount)); Text("${waterAmount.toInt()} L", fontWeight = FontWeight.Bold, color = GreenPrimary) }
                             Slider(value = waterAmount, onValueChange = { waterAmount = it }, valueRange = 0f..20f, steps = 19)
                         }
                     }
@@ -227,7 +225,7 @@ fun AddDiaryEntryScreen(
                 ) {
                     Column(verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(if (diaryPhotoBytes != null) Icons.Outlined.Image else Icons.Outlined.CameraAlt, null, tint = if (diaryPhotoBytes != null) GreenPrimary else Color.Gray)
-                        Text(if (diaryPhotoBytes != null) "Foto añadida (Toca para cambiar)" else "Añadir Foto", fontSize = 12.sp)
+                        Text(if (diaryPhotoBytes != null) stringResource(Res.string.diary_photo_change) else stringResource(Res.string.diary_add_photo), fontSize = 12.sp)
                     }
                 }
             }
@@ -241,26 +239,19 @@ fun AddDiaryEntryScreen(
                         val idToUpdate = taskId?.toLongOrNull() ?: 0L
 
                         if (isEditMode) {
-                            // UPDATE: Pasamos la foto
+                            // UPDATE
                             viewModel.guardarEntradaDiario(
                                 id = idToUpdate,
                                 bancalId = selectedBancalIds.first(),
                                 tipo = selectedType,
                                 desc = finalDesc,
                                 fecha = dateMillis,
-                                foto = diaryPhotoBytes // <--- FOTO
+                                foto = diaryPhotoBytes
                             )
                         } else {
-                            // CREATE: Pasamos la foto
+                            // CREATE
                             selectedBancalIds.forEach { id ->
-                                viewModel.guardarEntradaDiario(
-                                    bancalId = id,
-                                    tipo = selectedType,
-                                    desc = finalDesc,
-                                    fecha = dateMillis,
-                                    id = 0L,
-                                    foto = diaryPhotoBytes // <--- FOTO
-                                )
+                                viewModel.guardarEntradaDiario(bancalId = id, tipo = selectedType, desc = finalDesc, fecha = dateMillis, id = 0L, foto = diaryPhotoBytes)
                             }
                         }
                         showSuccessDialog = true
@@ -270,7 +261,7 @@ fun AddDiaryEntryScreen(
                 enabled = selectedBancalIds.isNotEmpty() && title.isNotBlank(),
                 colors = ButtonDefaults.buttonColors(containerColor = GreenPrimary)
             ) {
-                Text(if (isEditMode) "Actualizar" else "Registrar en ${selectedBancalIds.size} bancales", fontWeight = FontWeight.Bold)
+                Text(if (isEditMode) stringResource(Res.string.btn_update) else stringResource(Res.string.diary_btn_register, selectedBancalIds.size), fontWeight = FontWeight.Bold)
             }
         }
     }
@@ -280,7 +271,7 @@ fun AddDiaryEntryScreen(
         AlertDialog(
             onDismissRequest = { showPhotoOptions = false },
             icon = { Icon(Icons.Outlined.CameraAlt, null) },
-            title = { Text("Añadir imagen") },
+            title = { Text(stringResource(Res.string.diary_dialog_photo_title)) },
             text = {
                 Column(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -295,7 +286,7 @@ fun AddDiaryEntryScreen(
                     ) {
                         Icon(Icons.Outlined.CameraAlt, null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Hacer foto")
+                        Text(stringResource(Res.string.diary_btn_take_photo))
                     }
                     OutlinedButton(
                         onClick = {
@@ -306,25 +297,40 @@ fun AddDiaryEntryScreen(
                     ) {
                         Icon(Icons.Outlined.Image, null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Abrir galería")
+                        Text(stringResource(Res.string.diary_btn_gallery))
                     }
                 }
             },
             confirmButton = {
                 TextButton(onClick = { showPhotoOptions = false }) {
-                    Text("Cancelar")
+                    Text(stringResource(Res.string.btn_cancel))
                 }
             }
         )
     }
 
     if (showSuccessDialog) {
-        AlertDialog(onDismissRequest = { }, title = { Text("¡Éxito!") }, text = { Text(successMsg) }, confirmButton = { Button(onClick = { showSuccessDialog = false; navController.popBackStack() }) { Text("Aceptar") } })
+        AlertDialog(onDismissRequest = { }, title = { Text(stringResource(Res.string.dialog_success_title)) }, text = { Text(successMsg) }, confirmButton = { Button(onClick = { showSuccessDialog = false; navController.popBackStack() }) { Text(stringResource(Res.string.btn_accept)) } })
     }
 
     if (showDatePicker) {
         val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds())
-        DatePickerDialog(onDismissRequest = { showDatePicker = false }, confirmButton = { TextButton(onClick = { datePickerState.selectedDateMillis?.let { millis -> selectedDate = Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.UTC).date }; showDatePicker = false }) { Text("OK") } }) { DatePicker(state = datePickerState) }
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        selectedDate = Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.UTC).date
+                    }
+                    showDatePicker = false
+                }) {
+                    // CORREGIDO: Usamos dialog_btn_ok que sí existe
+                    Text(stringResource(Res.string.dialog_btn_ok))
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
 }
 

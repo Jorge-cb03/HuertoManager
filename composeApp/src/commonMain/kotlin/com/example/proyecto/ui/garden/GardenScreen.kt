@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.items // Importante para listas
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -19,7 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush // Importante para el degradado
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -32,6 +32,8 @@ import coil3.compose.AsyncImage
 import com.example.proyecto.data.database.entity.BancalEntity
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
+import org.jetbrains.compose.resources.stringResource
+import huertomanager.composeapp.generated.resources.*
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,17 +60,23 @@ fun GardenScreen(
 
     var showAddGardenDialog by remember { mutableStateOf(false) }
     var showGardenMenu by remember { mutableStateOf(false) }
+    var showDeleteGardenDialog by remember { mutableStateOf(false) }
     var tempName by remember { mutableStateOf("") }
 
-    // ESTADOS PARA PLANTAR
     var selectedSlotIdForPlanting by remember { mutableStateOf<Long?>(null) }
     var showPlantSelector by remember { mutableStateOf(false) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var successMessage by remember { mutableStateOf("") }
+
+    // --- CORRECCIÓN: Pre-cargar strings en contexto Composable ---
+    val msgCreated = stringResource(Res.string.dialog_success_garden_created)
+    val msgDeleted = stringResource(Res.string.dialog_success_garden_deleted)
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text(currentJardinera?.nombre ?: "Mi Huerta") },
+                title = { Text(currentJardinera?.nombre ?: stringResource(Res.string.garden_default_title)) },
                 actions = {
                     currentJardinera?.let { jardinera ->
                         IconButton(onClick = { viewModel.toggleFavorito(jardinera) }) {
@@ -82,8 +90,8 @@ fun GardenScreen(
                     Box {
                         IconButton(onClick = { showGardenMenu = true }) { Icon(Icons.Filled.MoreVert, null) }
                         DropdownMenu(expanded = showGardenMenu, onDismissRequest = { showGardenMenu = false }) {
-                            DropdownMenuItem(text = { Text("Nueva Jardinera") }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { showGardenMenu = false; showAddGardenDialog = true })
-                            DropdownMenuItem(text = { Text("Eliminar", color = RedDanger) }, leadingIcon = { Icon(Icons.Default.Delete, null, tint = RedDanger) }, onClick = { showGardenMenu = false; currentJardinera?.let { viewModel.archivar(it) } })
+                            DropdownMenuItem(text = { Text(stringResource(Res.string.garden_new_title)) }, leadingIcon = { Icon(Icons.Default.Add, null) }, onClick = { showGardenMenu = false; showAddGardenDialog = true })
+                            DropdownMenuItem(text = { Text(stringResource(Res.string.btn_delete), color = RedDanger) }, leadingIcon = { Icon(Icons.Default.Delete, null, tint = RedDanger) }, onClick = { showGardenMenu = false; showDeleteGardenDialog = true })
                         }
                     }
                 }
@@ -93,7 +101,7 @@ fun GardenScreen(
         Column(modifier = Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             if (currentJardinera == null) {
                 Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Button(onClick = { showAddGardenDialog = true }) { Text("Crear mi primera jardinera") }
+                    Button(onClick = { showAddGardenDialog = true }) { Text(stringResource(Res.string.garden_create_first)) }
                 }
             } else {
                 Card(
@@ -102,10 +110,10 @@ fun GardenScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 ) {
                     Row(Modifier.padding(12.dp).fillMaxWidth(), Arrangement.SpaceEvenly, Alignment.CenterVertically) {
-                        DimensionControl("Filas", currentJardinera.filas) { delta ->
+                        DimensionControl(stringResource(Res.string.garden_rows), currentJardinera.filas) { delta ->
                             viewModel.actualizarJardinera(currentJardinera, currentJardinera.nombre, (currentJardinera.filas + delta).coerceAtLeast(1), currentJardinera.columnas)
                         }
-                        DimensionControl("Columnas", currentJardinera.columnas) { delta ->
+                        DimensionControl(stringResource(Res.string.garden_cols), currentJardinera.columnas) { delta ->
                             viewModel.actualizarJardinera(currentJardinera, currentJardinera.nombre, currentJardinera.filas, (currentJardinera.columnas + delta).coerceAtLeast(1))
                         }
                     }
@@ -123,11 +131,9 @@ fun GardenScreen(
                             onToggleVisibility = { viewModel.toggleBancal(bancal.id, !bancal.esFuncional) },
                             onClick = {
                                 if (bancal.perenualId == null) {
-                                    // SI ESTÁ VACÍO -> ABRIMOS SELECTOR DE SEMILLAS
                                     selectedSlotIdForPlanting = bancal.id
                                     showPlantSelector = true
                                 } else {
-                                    // SI TIENE PLANTA -> DETALLE
                                     navController.navigate("garden_slot_detail/${bancal.id}")
                                 }
                             }
@@ -147,26 +153,64 @@ fun GardenScreen(
     if (showAddGardenDialog) {
         AlertDialog(
             onDismissRequest = { showAddGardenDialog = false },
-            title = { Text("Nueva Jardinera") },
-            text = { OutlinedTextField(value = tempName, onValueChange = { tempName = it }, label = { Text("Nombre") }) },
-            confirmButton = { Button(onClick = { if(tempName.isNotBlank()) viewModel.crearNuevaJardinera(tempName, 4, 2); showAddGardenDialog = false }) { Text("Crear") } }
+            title = { Text(stringResource(Res.string.garden_new_title)) },
+            text = { OutlinedTextField(value = tempName, onValueChange = { tempName = it }, label = { Text(stringResource(Res.string.garden_name_label)) }) },
+            confirmButton = {
+                Button(onClick = {
+                    if(tempName.isNotBlank()) {
+                        viewModel.crearNuevaJardinera(tempName, 4, 2)
+                        showAddGardenDialog = false
+                        successMessage = msgCreated // Uso variable precargada
+                        showSuccessDialog = true
+                    }
+                }) { Text(stringResource(Res.string.btn_create)) }
+            },
+            dismissButton = { TextButton(onClick = { showAddGardenDialog = false }) { Text(stringResource(Res.string.btn_cancel)) } }
         )
     }
 
-    // --- SELECTOR DE SEMILLAS REAL (NO HARDCODED) ---
+    if (showDeleteGardenDialog && currentJardinera != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteGardenDialog = false },
+            title = { Text(stringResource(Res.string.dialog_garden_delete_title)) },
+            text = { Text(stringResource(Res.string.dialog_garden_delete_msg)) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.archivar(currentJardinera)
+                        showDeleteGardenDialog = false
+                        successMessage = msgDeleted // Uso variable precargada
+                        showSuccessDialog = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = RedDanger)
+                ) { Text(stringResource(Res.string.btn_delete)) }
+            },
+            dismissButton = { TextButton(onClick = { showDeleteGardenDialog = false }) { Text(stringResource(Res.string.btn_cancel)) } }
+        )
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            title = { Text(stringResource(Res.string.dialog_success_title)) },
+            text = { Text(successMessage) },
+            confirmButton = { Button(onClick = { showSuccessDialog = false }) { Text(stringResource(Res.string.dialog_btn_ok)) } }
+        )
+    }
+
     if (showPlantSelector) {
         val semillas by viewModel.semillasDisponibles.collectAsState(initial = emptyList())
 
         AlertDialog(
             onDismissRequest = { showPlantSelector = false },
-            title = { Text("Elige qué plantar") },
+            title = { Text(stringResource(Res.string.garden_plant_title)) },
             text = {
                 if (semillas.isEmpty()) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.Spa, null, tint = Color.Gray, modifier = Modifier.size(40.dp))
                         Spacer(Modifier.height(8.dp))
-                        Text("No tienes semillas en inventario.", textAlign = TextAlign.Center)
-                        Text("Añádelas en la sección Productos.", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                        Text(stringResource(Res.string.garden_no_seeds), textAlign = TextAlign.Center)
+                        Text(stringResource(Res.string.garden_add_seeds_hint), style = MaterialTheme.typography.bodySmall, color = Color.Gray)
                     }
                 } else {
                     LazyColumn(modifier = Modifier.heightIn(max = 300.dp)) {
@@ -182,7 +226,6 @@ fun GardenScreen(
                                     }
                                 },
                                 modifier = Modifier.clickable {
-                                    // Plantamos y cerramos
                                     selectedSlotIdForPlanting?.let {
                                         viewModel.plantar(it, semilla.perenualId ?: semilla.id.toInt())
                                     }
@@ -194,7 +237,7 @@ fun GardenScreen(
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showPlantSelector = false }) { Text("Cancelar") } }
+            confirmButton = { TextButton(onClick = { showPlantSelector = false }) { Text(stringResource(Res.string.btn_cancel)) } }
         )
     }
 }
@@ -211,7 +254,6 @@ fun DimensionControl(label: String, value: Int, onValueChange: (Int) -> Unit) {
     }
 }
 
-// --- TARJETA DE BANCAL REDISEÑADA ---
 @Composable
 fun BancalSlotCard(bancal: BancalEntity, onToggleVisibility: () -> Unit, onClick: () -> Unit) {
     var showMenu by remember { mutableStateOf(false) }
@@ -231,45 +273,16 @@ fun BancalSlotCard(bancal: BancalEntity, onToggleVisibility: () -> Unit, onClick
             .then(if (!bancal.esFuncional) Modifier.border(1.dp, Color.Gray.copy(0.3f), RoundedCornerShape(12.dp)) else Modifier)
     ) {
         Box(Modifier.fillMaxSize()) {
-
             if (bancal.esFuncional) {
-                // CONTENIDO DEL BANCAL
                 if (isEmpty) {
-                    // ESTADO VACÍO: Icono + en el centro
-                    Icon(
-                        Icons.Default.Add,
-                        null,
-                        tint = Color.Gray.copy(0.5f),
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    Icon(Icons.Default.Add, null, tint = Color.Gray.copy(0.5f), modifier = Modifier.align(Alignment.Center))
                 } else {
-                    // ESTADO OCUPADO: Imagen a pantalla completa
                     if (bancal.imagenUrl != null) {
-                        AsyncImage(
-                            model = bancal.imagenUrl,
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                        // Degradado negro abajo para que se lea el texto
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(
-                                    Brush.verticalGradient(
-                                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
-                                        startY = 100f // Ajusta el inicio del degradado
-                                    )
-                                )
-                        )
+                        AsyncImage(model = bancal.imagenUrl, contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                        Box(modifier = Modifier.fillMaxSize().background(Brush.verticalGradient(colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)), startY = 100f)))
                     } else {
-                        // Si no hay imagen url, ponemos un icono central
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Icon(Icons.Default.Eco, null, tint = GreenPrimary, modifier = Modifier.size(40.dp))
-                        }
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Icon(Icons.Default.Eco, null, tint = GreenPrimary, modifier = Modifier.size(40.dp)) }
                     }
-
-                    // NOMBRE DEL PRODUCTO: Abajo y centrado
                     Text(
                         text = bancal.nombreCultivo ?: "",
                         fontSize = 12.sp,
@@ -278,42 +291,19 @@ fun BancalSlotCard(bancal: BancalEntity, onToggleVisibility: () -> Unit, onClick
                         textAlign = TextAlign.Center,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .align(Alignment.BottomCenter)
-                            .padding(horizontal = 4.dp, vertical = 8.dp)
+                        modifier = Modifier.align(Alignment.BottomCenter).padding(horizontal = 4.dp, vertical = 8.dp)
                     )
                 }
             } else {
-                // ESTADO OCULTO
                 Icon(Icons.Default.Block, null, tint = Color.Gray.copy(0.2f), modifier = Modifier.align(Alignment.Center))
             }
 
-            // BOTÓN DE MENÚ (Top End)
-            // Le ponemos un fondo circular semitransparente para que se vea sobre las fotos
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(4.dp)
-            ) {
-                IconButton(
-                    onClick = { showMenu = true },
-                    modifier = Modifier
-                        .size(24.dp)
-                        .background(Color.Black.copy(alpha = 0.3f), CircleShape)
-                ) {
-                    Icon(
-                        Icons.Default.MoreVert,
-                        null,
-                        modifier = Modifier.size(16.dp),
-                        tint = Color.White
-                    )
+            Box(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)) {
+                IconButton(onClick = { showMenu = true }, modifier = Modifier.size(24.dp).background(Color.Black.copy(alpha = 0.3f), CircleShape)) {
+                    Icon(Icons.Default.MoreVert, null, modifier = Modifier.size(16.dp), tint = Color.White)
                 }
-
                 DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                    DropdownMenuItem(
-                        text = { Text(if(bancal.esFuncional) "Ocultar" else "Mostrar") },
-                        onClick = { showMenu = false; onToggleVisibility() }
-                    )
+                    DropdownMenuItem(text = { Text(if(bancal.esFuncional) stringResource(Res.string.garden_hide) else stringResource(Res.string.garden_show)) }, onClick = { showMenu = false; onToggleVisibility() })
                 }
             }
         }

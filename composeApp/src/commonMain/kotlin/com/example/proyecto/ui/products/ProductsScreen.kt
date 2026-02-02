@@ -20,6 +20,8 @@ import com.example.proyecto.ui.garden.GardenViewModel
 import com.example.proyecto.ui.navigation.AppScreens
 import com.example.proyecto.ui.theme.GreenPrimary
 import com.example.proyecto.ui.theme.RedDanger
+import org.jetbrains.compose.resources.stringResource
+import huertomanager.composeapp.generated.resources.*
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,11 +30,13 @@ fun ProductsScreen(navController: NavController, viewModel: GardenViewModel = ko
     val productosState = viewModel.getProductos().collectAsState(initial = emptyList())
     val productos = productosState.value
     var searchQuery by remember { mutableStateOf("") }
+    var showDeleteConfirm by remember { mutableStateOf<Long?>(null) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
 
-    // CAMBIO CLAVE: Filtramos también que el stock sea mayor que 0
-    val filteredProducts = productos.filter {
-        it.nombre.contains(searchQuery, ignoreCase = true) && it.stock > 0
-    }
+    // --- CORRECCIÓN: Precarga string ---
+    val msgDeleted = stringResource(Res.string.dialog_success_product_deleted)
+
+    val filteredProducts = productos.filter { it.nombre.contains(searchQuery, ignoreCase = true) && it.stock > 0 }
 
     Scaffold(
         floatingActionButton = {
@@ -40,26 +44,21 @@ fun ProductsScreen(navController: NavController, viewModel: GardenViewModel = ko
                 onClick = { navController.navigate(AppScreens.AddProduct) },
                 containerColor = GreenPrimary,
                 contentColor = Color.White
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Añadir Producto")
-            }
+            ) { Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.products_add_fab)) }
         }
     ) { padding ->
-        Column(
-            modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)
-        ) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp)) {
             Text(
-                text = "Mis Productos",
+                text = stringResource(Res.string.products_title),
                 style = MaterialTheme.typography.headlineMedium,
                 color = GreenPrimary,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            // Buscador
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = { searchQuery = it },
-                label = { Text("Buscar producto...") },
+                label = { Text(stringResource(Res.string.products_search_hint)) },
                 leadingIcon = { Icon(Icons.Default.Search, null) },
                 modifier = Modifier.fillMaxWidth(),
                 shape = MaterialTheme.shapes.medium
@@ -69,7 +68,7 @@ fun ProductsScreen(navController: NavController, viewModel: GardenViewModel = ko
 
             if (filteredProducts.isEmpty()) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("No hay productos disponibles.", color = Color.Gray)
+                    Text(stringResource(Res.string.products_empty), color = Color.Gray)
                 }
             } else {
                 LazyVerticalGrid(
@@ -78,59 +77,22 @@ fun ProductsScreen(navController: NavController, viewModel: GardenViewModel = ko
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(filteredProducts) { producto ->
-                        // WRAPPER PARA EL MENÚ Y EL CLIC
                         Box {
-                            // USAMOS LA NUEVA TARJETA ESPECÍFICA PARA PRODUCTOS
                             ProductItemCard(
                                 name = producto.nombre,
                                 quantity = producto.stock,
                                 type = producto.categoria,
-                                onClick = {
-                                    // IR AL DETALLE
-                                    navController.navigate(AppScreens.createProductDetailRoute(producto.id.toString()))
-                                },
-                                // ACCIONES DE STOCK
-                                onIncrease = {
-                                    viewModel.updateStock(producto.id, producto.stock + 1)
-                                },
-                                onDecrease = {
-                                    // Si bajamos a 0, updateStock se encarga de borrarlo
-                                    val newStock = (producto.stock - 1).coerceAtLeast(0.0)
-                                    viewModel.updateStock(producto.id, newStock)
-                                }
+                                onClick = { navController.navigate(AppScreens.createProductDetailRoute(producto.id.toString())) },
+                                onIncrease = { viewModel.updateStock(producto.id, producto.stock + 1) },
+                                onDecrease = { viewModel.updateStock(producto.id, (producto.stock - 1).coerceAtLeast(0.0)) }
                             )
 
-                            // Menú rápido (Tres puntos)
                             var showMenu by remember { mutableStateOf(false) }
-
                             Box(modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)) {
-                                IconButton(
-                                    onClick = { showMenu = true },
-                                    modifier = Modifier.size(32.dp)
-                                ) {
-                                    Icon(Icons.Default.MoreVert, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-
-                                DropdownMenu(
-                                    expanded = showMenu,
-                                    onDismissRequest = { showMenu = false }
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Editar") },
-                                        leadingIcon = { Icon(Icons.Default.Edit, null) },
-                                        onClick = {
-                                            showMenu = false
-                                            navController.navigate(AppScreens.createEditProductRoute(producto.id))
-                                        }
-                                    )
-                                    DropdownMenuItem(
-                                        text = { Text("Eliminar", color = RedDanger) },
-                                        leadingIcon = { Icon(Icons.Default.Delete, null, tint = RedDanger) },
-                                        onClick = {
-                                            showMenu = false
-                                            viewModel.eliminarProducto(producto.id)
-                                        }
-                                    )
+                                IconButton(onClick = { showMenu = true }, modifier = Modifier.size(32.dp)) { Icon(Icons.Default.MoreVert, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                                    DropdownMenuItem(text = { Text(stringResource(Res.string.btn_edit)) }, leadingIcon = { Icon(Icons.Default.Edit, null) }, onClick = { showMenu = false; navController.navigate(AppScreens.createEditProductRoute(producto.id)) })
+                                    DropdownMenuItem(text = { Text(stringResource(Res.string.btn_delete), color = RedDanger) }, leadingIcon = { Icon(Icons.Default.Delete, null, tint = RedDanger) }, onClick = { showMenu = false; showDeleteConfirm = producto.id })
                                 }
                             }
                         }
@@ -139,87 +101,46 @@ fun ProductsScreen(navController: NavController, viewModel: GardenViewModel = ko
             }
         }
     }
+
+    if (showDeleteConfirm != null) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = null },
+            icon = { Icon(Icons.Default.Warning, null, tint = RedDanger) },
+            title = { Text(stringResource(Res.string.product_delete_confirm)) },
+            text = { Text(stringResource(Res.string.product_delete_msg)) },
+            confirmButton = { Button(onClick = { viewModel.eliminarProducto(showDeleteConfirm!!); showDeleteConfirm = null; showSuccessDialog = true }, colors = ButtonDefaults.buttonColors(containerColor = RedDanger)) { Text(stringResource(Res.string.btn_delete)) } },
+            dismissButton = { TextButton(onClick = { showDeleteConfirm = null }) { Text(stringResource(Res.string.btn_cancel)) } }
+        )
+    }
+
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showSuccessDialog = false },
+            title = { Text(stringResource(Res.string.dialog_success_title)) },
+            text = { Text(msgDeleted) }, // VARIABLE
+            confirmButton = { Button(onClick = { showSuccessDialog = false }) { Text(stringResource(Res.string.dialog_btn_ok)) } }
+        )
+    }
 }
 
-// --- COMPONENTE LOCAL: TARJETA DE PRODUCTO MEJORADA ---
 @Composable
-fun ProductItemCard(
-    name: String,
-    quantity: Double,
-    type: String,
-    onClick: () -> Unit,
-    onIncrease: () -> Unit, // Nuevo callback
-    onDecrease: () -> Unit  // Nuevo callback
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
+fun ProductItemCard(name: String, quantity: Double, type: String, onClick: () -> Unit, onIncrease: () -> Unit, onDecrease: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth().clickable(onClick = onClick), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+        Column(modifier = Modifier.padding(16.dp)) {
             val icon = when {
                 type.contains("SEED", true) -> Icons.Default.Grass
                 type.contains("FERTILIZER", true) -> Icons.Default.Science
                 type.contains("TOOL", true) -> Icons.Default.Build
                 else -> Icons.Default.Inventory
             }
-
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = GreenPrimary,
-                modifier = Modifier.size(28.dp)
-            )
-
+            Icon(imageVector = icon, contentDescription = null, tint = GreenPrimary, modifier = Modifier.size(28.dp))
             Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                fontSize = 18.sp
-            )
-
+            Text(text = name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, maxLines = 1, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(12.dp))
-
-            // --- SECCIÓN DE CONTROL DE STOCK ---
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                // Botón Menos
-                FilledIconButton(
-                    onClick = onDecrease,
-                    enabled = quantity > 0,
-                    modifier = Modifier.size(32.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Icon(Icons.Default.Remove, contentDescription = "Disminuir", modifier = Modifier.size(16.dp))
-                }
-
-                // Cantidad de Stock
-                Text(
-                    text = if (quantity % 1.0 == 0.0) quantity.toInt().toString() else quantity.toString(),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = if (quantity <= 3.0) RedDanger else GreenPrimary, // Rojo si <= 3
-                    modifier = Modifier.weight(1f)
-                )
-
-                // Botón Más
-                FilledIconButton(
-                    onClick = onIncrease,
-                    modifier = Modifier.size(32.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(containerColor = GreenPrimary)
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Aumentar", tint = Color.White, modifier = Modifier.size(16.dp))
-                }
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                FilledIconButton(onClick = onDecrease, enabled = quantity > 0, modifier = Modifier.size(32.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) { Icon(Icons.Default.Remove, contentDescription = stringResource(Res.string.products_decrease), modifier = Modifier.size(16.dp)) }
+                Text(text = if (quantity % 1.0 == 0.0) quantity.toInt().toString() else quantity.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.ExtraBold, color = if (quantity <= 3.0) RedDanger else GreenPrimary, modifier = Modifier.weight(1f))
+                FilledIconButton(onClick = onIncrease, modifier = Modifier.size(32.dp), colors = IconButtonDefaults.filledIconButtonColors(containerColor = GreenPrimary)) { Icon(Icons.Default.Add, contentDescription = stringResource(Res.string.products_increase), tint = Color.White, modifier = Modifier.size(16.dp)) }
             }
         }
     }

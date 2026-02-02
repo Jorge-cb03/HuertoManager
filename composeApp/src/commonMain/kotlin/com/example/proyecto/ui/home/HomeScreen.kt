@@ -43,7 +43,8 @@ fun HomeScreen(navController: NavController, viewModel: GardenViewModel = koinVi
         Row(Modifier.fillMaxWidth().padding(top = 40.dp, bottom = 20.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Column {
                 Text("${today.dayOfMonth}/${today.monthNumber}", color = MaterialTheme.colorScheme.secondary)
-                Text("Hola Jorge,\n¿Cómo va la cosecha?", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                // Se usa el recurso de saludo + rol o mensaje genérico para evitar hardcoding del nombre
+                Text(stringResource(Res.string.home_greeting), fontSize = 28.sp, fontWeight = FontWeight.Bold)
             }
             IconButton(onClick = { navController.navigate(AppScreens.Alerts) }) { Icon(Icons.Filled.Notifications, null, tint = GreenPrimary) }
         }
@@ -51,14 +52,14 @@ fun HomeScreen(navController: NavController, viewModel: GardenViewModel = koinVi
         WeatherCard(now)
 
         Spacer(Modifier.height(30.dp))
-        Text("Accesos Directos", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Text(stringResource(Res.string.quick_access_title), fontWeight = FontWeight.Bold, fontSize = 18.sp)
 
         Row(
             modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp).horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (favoritedGardens.isEmpty()) {
-                Text("No tienes favoritos aún.", color = Color.Gray, modifier = Modifier.padding(16.dp))
+                Text(stringResource(Res.string.garden_no_history), color = Color.Gray, modifier = Modifier.padding(16.dp))
             } else {
                 favoritedGardens.forEach { garden ->
                     Card(
@@ -83,7 +84,7 @@ fun HomeScreen(navController: NavController, viewModel: GardenViewModel = koinVi
                 IconButton(onClick = { }, Modifier.size(100.dp)) {
                     Icon(Icons.Default.AutoAwesome, null, tint = GreenPrimary, modifier = Modifier.fillMaxSize())
                 }
-                Text("Asistente IA", fontSize = 12.sp, color = GreenPrimary, fontWeight = FontWeight.Bold)
+                Text(stringResource(Res.string.ai_chat_title), fontSize = 12.sp, color = GreenPrimary, fontWeight = FontWeight.Bold)
             }
         }
         Spacer(Modifier.height(100.dp))
@@ -97,9 +98,9 @@ fun WeatherCard(time: LocalDateTime) {
     Card(Modifier.fillMaxWidth().height(130.dp), shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = bgColor)) {
         Row(Modifier.fillMaxSize().padding(24.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
             Column {
-                Text("Estado Clima", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                Text(stringResource(Res.string.weather_title_now), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                 Text(if(isNight) "18°C" else "26°C", fontSize = 42.sp, fontWeight = FontWeight.Bold)
-                Text(if(isNight) "Noche Despejada" else "Soleado")
+                Text(if(isNight) stringResource(Res.string.weather_night) else stringResource(Res.string.weather_sunny))
             }
             Icon(if(isNight) Icons.Default.NightsStay else Icons.Default.WbSunny, null, Modifier.size(60.dp), tint = if(isNight) Color(0xFFF1C40F) else Color(0xFFE67E22))
         }
